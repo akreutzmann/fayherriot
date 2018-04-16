@@ -1,0 +1,180 @@
+#' Function for Fay-Herriot model
+#'
+#' This function conducts the estimation of a Fay-Herriot model.
+#'
+#' @param formula formula object.
+#' @param vardir direct variance.
+#' @param combined_data combined data.
+#' @param domains domain level.
+#' @param method method for the estimation of sigmau2.
+#' @param interval interval for the estimation of sigmau2.
+#' @param precision precision criteria for the estimation of sigmau2.
+#' @param maxiter maximum of iterations for the estimation of sigmau2.
+#' @return fitted FH model.
+#' @export
+
+
+FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
+                  interval = c(0, 1000), precision = 0.0001, maxiter = 100) {
+
+
+  # Get sample and population data
+  obs_dom <- !is.na(combined_data[[paste(lhs(formula))]])
+
+  data <- combined_data[obs_dom == TRUE,]
+
+  # Get response variable and model matrix from formula and data
+  direct <- makeXY(formula, data)$y
+  model_X <- makeXY(formula, data)$x
+  vardir <- data[, vardir]
+
+
+
+  if (is.null(domains)) {
+    data$domains <- 1:length(direct)
+    domains <- "domains"
+  }
+
+  # Number of areas
+  m <- length(direct)
+  M <- length(combined_data[[paste(lhs(formula))]])
+  # Number of covariates
+  p <- ncol(model_X)
+
+  # Estimate sigma u
+  if (method == "sae_reml") {
+    sigmau2 <- saeReml(vardir = vardir, precision = precision, maxiter = maxiter,
+                       X = model_X, y = direct)
+  } else if (method == "nicola_reml") {
+    sigmau2 <- NicolaReml(interval = interval, vardir = vardir, x = model_X,
+                          direct = direct, areanumber = m)
+  } else if (method == "AMRL") {
+    sigmau2 <- AMRL(interval = interval, vardir = vardir, x = model_X,
+                    direct = direct, areanumber = m)
+  } else if (method == "AMPL") {
+    sigmau2 <- AMPL(interval = interval, vardir = vardir, x = model_X,
+                    direct = direct, areanumber = m)
+  }
+
+  # Estimation of the regression coefficients
+  # Identity matrix mxm
+  D <- diag(1, m)
+  # Total variance-covariance matrix - only values on the diagonal due to
+  # independence of error terms
+  V <- sigmau2 * D%*%t(D) + diag(as.numeric(vardir))
+  # Inverse of the total variance
+  Vi <- solve(V)
+  # Inverse of X'ViX
+  Q <- solve(t(model_X)%*%Vi%*%model_X)
+  # Beta by (X'ViX)^-1 X'Viy
+  Beta.hat <- Q%*%t(model_X)%*%Vi%*%direct
+
+  # Inference for coefficients
+  std.errorbeta <- sqrt(diag(Q))
+  tvalue <- Beta.hat/std.errorbeta
+  pvalue <- 2 * pnorm(abs(tvalue), lower.tail = FALSE)
+
+  Coefficients <- data.frame(Coefficients = Beta.hat,
+                             Std.Error = std.errorbeta,
+                             t.value = tvalue,
+                             p.value = pvalue)
+
+  # Computation of the EBLUP
+  real_res <- direct - c(model_X%*%Beta.hat)
+  sigmau2Diag <- sigmau2*D
+  u.hat <- sigmau2Diag%*%t(D)%*%Vi%*%real_res
+  # Small area mean
+  EBLUP <- model_X%*%Beta.hat + D%*%u.hat
+
+
+  # Criteria for model selection
+  loglike <- (-0.5) * (sum(log(2 * pi * (sigmau2 + vardir)) +
+                             (real_res^2)/(sigmau2 + vardir)))
+  AIC <- (-2) * loglike + 2 * (p + 1)
+  BIC <- (-2) * loglike + (p + 1) * log(m)
+
+  criteria <- data.frame(loglike = loglike,
+                         AIC = AIC,
+                         BIC = BIC)
+
+  # Analytical MSE
+  # Preparation of matrices to save MSE components
+  g1 <- rep(0, m)
+  g2 <- rep(0, m)
+  g3 <- rep(0, m)
+  mse <- rep(0, m)
+  # Inverse of total variance
+  Vi <- 1/(sigmau2 + vardir)
+  # Shrinkage factor
+  Bd <- vardir/(sigmau2 + vardir)
+  # Squared inverse of total variance
+  SumAD2 <- sum(Vi^2)
+  # X'Vi
+  XtVi <- t(Vi * model_X)
+  # (X'ViX)^-1
+  Q <- solve(XtVi %*% model_X)
+
+  # 2 divided by squared inverse of total variance
+  VarA <- 2/SumAD2
+  for (d in 1:m) {
+    # Variance due to random effects: vardir * gamma
+    g1[d] <- vardir[d] * (1 - Bd[d])
+    # Covariate for single domain
+    xd <- matrix(model_X[d, ], nrow = 1, ncol = p)
+    # Variance due to the estimation of beta
+    g2[d] <- (Bd[d]^2) * xd %*% Q %*% t(xd)
+    # Variance due to the estimation of the variance of the random effects
+    g3[d] <- (Bd[d]^2) * VarA/(sigmau2 + vardir[d])
+    # Prasad-Rao estimator
+    mse[d] <- g1[d] + g2[d] + 2 * g3[d]
+  }
+
+  EBLUP_data <- data.frame(Domain = data[[domains]],
+                           Direct = direct,
+                           EBLUP = as.numeric(EBLUP))
+
+  MSE_data <- data.frame(Domain = data[[domains]],
+                         Var = vardir,
+                         PR_MSE = mse)
+
+  Gamma <- data.frame(Domain = data[[domains]],
+                      Gamma = sigmau2 / (sigmau2 + vardir))
+
+  # Prediction
+  if (all(obs_dom == TRUE)) {
+    EBLUP_pred <- NULL
+  } else {
+    pred_data_tmp <- combined_data[obs_dom == FALSE,]
+
+    pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
+    lhs(formula) <- quote(helper)
+    pred_data <- makeXY(formula = formula, data = pred_data_tmp)
+
+    pred_X <- pred_data$x
+    pred_y <- pred_X %*% Beta.hat
+
+    EBLUP_pred <- data.frame(Domain = combined_data[[domains]])
+    EBLUP_pred$Pred_FH[obs_dom == TRUE] <- EBLUP
+    EBLUP_pred$Pred_FH[obs_dom == FALSE] <- pred_y
+    EBLUP_pred$Ind[obs_dom == TRUE] <- 0
+    EBLUP_pred$Ind[obs_dom == FALSE] <- 1
+  }
+
+
+
+  # Return
+  out <- list(ind = EBLUP_data,
+              MSE = MSE_data,
+              ind_pred = EBLUP_pred,
+              Coefficients = Coefficients,
+              Sigmau2 = sigmau2,
+              random_effects = u.hat,
+              real_residuals = real_res,
+              gamma = Gamma,
+              model_select = criteria)
+
+  class(out) <- "FH_AK"
+
+  return(out)
+
+}
