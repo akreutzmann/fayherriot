@@ -1,4 +1,16 @@
-# Estimation functions for sigmau2
+# Estimation functions for sigmau2 #############################################
+
+#' Function for estimating sigmau2 following the \pkg{sae} package.
+#'
+#' This function estimates sigmau2.
+#'
+#' @param vardir direct variance.
+#' @param precision precision criteria for the estimation of sigmau2.
+#' @param maxiter maximum of iterations for the estimation of sigmau2.
+#' @param X matrix with explanatory variables.
+#' @param y direct estimator.
+#' @return estimated sigmau2.
+#' @keywords internal
 
 
 saeReml <- function(vardir, precision, maxiter, X, y) {
@@ -23,6 +35,17 @@ saeReml <- function(vardir, precision, maxiter, X, y) {
 }
 
 
+#' Function for estimating sigmau2 following Nicola.
+#'
+#' This function estimates sigmau2.
+#'
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param vardir direct variance.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
 
 
 NicolaReml <- function(interval, direct, x, vardir, areanumber) {
@@ -57,6 +80,19 @@ NicolaReml <- function(interval, direct, x, vardir, areanumber) {
 }
 
 
+#' Function for estimating sigmau2 following Li and Lahiri.
+#'
+#' This function estimates sigmau2 using the adjusted maximum residual
+#' likelihood.
+#'
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param vardir direct variance.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
+
 AMRL <- function(interval, direct, x, vardir, areanumber) {
 
   AR <- function(interval, direct, x, vardir, areanumber){
@@ -90,6 +126,19 @@ AMRL <- function(interval, direct, x, vardir, areanumber) {
   return(sigmau_amrl = estsigma2u)
 }
 
+
+#' Function for estimating sigmau2 following Li and Lahiri.
+#'
+#' This function estimates sigmau2 using the adjusted maximum profile
+#' likelihood.
+#'
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param vardir direct variance.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
 
 AMPL <- function(interval, direct, x, vardir, areanumber) {
 

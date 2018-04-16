@@ -11,6 +11,9 @@
 #' @param precision precision criteria for the estimation of sigmau2.
 #' @param maxiter maximum of iterations for the estimation of sigmau2.
 #' @return fitted FH model.
+#' @import formula.tools
+#' @importFrom stats median model.frame model.matrix model.response optimize
+#' @importFrom stats pnorm rnorm
 #' @export
 
 

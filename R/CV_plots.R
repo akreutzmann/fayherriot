@@ -9,11 +9,18 @@
 #' @param colline color of benchmark line.
 #' @param color color of the two estimates.
 #' @return two CV plots.
+#' @importFrom ggplot2 ggplot geom_point aes labs scale_color_manual theme_minimal
+#' @importFrom ggplot2 theme_minimal geom_hline geom_boxplot coord_flip
+#' @importFrom ggplot2 scale_fill_manual
 #' @export
 
 CV_plots <- function(fit_FH, label_direct = "Direct",
                      label_FH = "FH-MI", line = 20, colline = "red",
                      color = c("dodgerblue4", "#99CC00")) {
+
+  area <- NULL
+  cv <- NULL
+  method <- NULL
 
   # Define a data frame with the different variables
   x <- data.frame(Direct = fit_FH$ind$Direct,
