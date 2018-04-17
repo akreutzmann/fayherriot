@@ -18,7 +18,8 @@
 
 
 FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
-                  interval = c(0, 1000), precision = 0.0001, maxiter = 100) {
+                  back_transformation, interval = c(0, 1000), precision = 0.0001,
+                  maxiter = 100) {
 
 
   # Get sample and population data
@@ -86,8 +87,36 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
   real_res <- direct - c(model_X%*%Beta.hat)
   sigmau2Diag <- sigmau2*D
   u.hat <- sigmau2Diag%*%t(D)%*%Vi%*%real_res
+
+  # Computation of shrinkage factor
+  gamma <- sigmau2 / (sigmau2 + vardir)
+
   # Small area mean
-  EBLUP <- model_X%*%Beta.hat + D%*%u.hat
+  if (is.null(back_transformation)) {
+    EBLUP <- model_X%*%Beta.hat + D%*%u.hat
+  } else if (back_transformation == "naive") {
+    EBLUP <- exp(model_X%*%Beta.hat + D%*%u.hat)
+  } else if (back_transformation == "SM") {
+    EBLUP <- exp(model_X%*%Beta.hat + D%*%u.hat + (0.5 * sigmau2 * (1 - gamma)))
+  } else if (back_transformation == "BC2") {
+    Deriv1 <- solve((sigmau2 * D) + diag(c(vardir), m))
+    ### Inverse of fisher information matrix. That is var. sigma2u
+    II <- ((1/2) * sum(diag(Deriv1%*%Deriv1)))^(-1)
+
+    A <- NULL
+    for (i in 1:m) {
+      A[i] <- ((1 - gamma[i])^2) * (matrix(model_X[i,],
+                                            nrow = 1)%*%Q%*%matrix(model_X[i,], ncol = 1))
+    }
+    tau <- sigmau2 + vardir
+    B1 <- (((1 - gamma)/tau) * ((direct - c(model_X%*%Beta.hat))) + (0.5 * ((1 - gamma)^2)))^2
+    B2 <- (((2 - 2 * gamma)/(tau^2)) * (direct - c(model_X%*%Beta.hat))) + (((1 - gamma)^2)/tau)
+    c1 <- exp(0.5 * (A + B1 * II))
+    c2 <- exp(0.5 * (A + (B1 - B2) * II))
+
+    EBLUP <- exp(model_X%*%Beta.hat + D%*%u.hat + (0.5 * sigmau2 * (1 - gamma)))/c2
+  }
+
 
 
   # Criteria for model selection
