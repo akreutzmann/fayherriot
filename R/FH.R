@@ -131,35 +131,71 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
 
   # Analytical MSE
   # Preparation of matrices to save MSE components
-  g1 <- rep(0, m)
-  g2 <- rep(0, m)
-  g3 <- rep(0, m)
-  mse <- rep(0, m)
-  # Inverse of total variance
-  Vi <- 1/(sigmau2 + vardir)
-  # Shrinkage factor
-  Bd <- vardir/(sigmau2 + vardir)
-  # Squared inverse of total variance
-  SumAD2 <- sum(Vi^2)
-  # X'Vi
-  XtVi <- t(Vi * model_X)
-  # (X'ViX)^-1
-  Q <- solve(XtVi %*% model_X)
+  if (is.null(back_transformation)) {
+    g1 <- rep(0, m)
+    g2 <- rep(0, m)
+    g3 <- rep(0, m)
+    mse <- rep(0, m)
+    # Inverse of total variance
+    Vi <- 1/(sigmau2 + vardir)
+    # Shrinkage factor
+    Bd <- vardir/(sigmau2 + vardir)
+    # Squared inverse of total variance
+    SumAD2 <- sum(Vi^2)
+    # X'Vi
+    XtVi <- t(Vi * model_X)
+    # (X'ViX)^-1
+    Q <- solve(XtVi %*% model_X)
 
-  # 2 divided by squared inverse of total variance
-  VarA <- 2/SumAD2
-  for (d in 1:m) {
-    # Variance due to random effects: vardir * gamma
-    g1[d] <- vardir[d] * (1 - Bd[d])
-    # Covariate for single domain
-    xd <- matrix(model_X[d, ], nrow = 1, ncol = p)
-    # Variance due to the estimation of beta
-    g2[d] <- (Bd[d]^2) * xd %*% Q %*% t(xd)
-    # Variance due to the estimation of the variance of the random effects
-    g3[d] <- (Bd[d]^2) * VarA/(sigmau2 + vardir[d])
-    # Prasad-Rao estimator
-    mse[d] <- g1[d] + g2[d] + 2 * g3[d]
+    # 2 divided by squared inverse of total variance
+    VarA <- 2/SumAD2
+    for (d in 1:m) {
+      # Variance due to random effects: vardir * gamma
+      g1[d] <- vardir[d] * (1 - Bd[d])
+      # Covariate for single domain
+      xd <- matrix(model_X[d, ], nrow = 1, ncol = p)
+      # Variance due to the estimation of beta
+      g2[d] <- (Bd[d]^2) * xd %*% Q %*% t(xd)
+      # Variance due to the estimation of the variance of the random effects
+      g3[d] <- (Bd[d]^2) * VarA/(sigmau2 + vardir[d])
+      # Prasad-Rao estimator
+      mse[d] <- g1[d] + g2[d] + 2 * g3[d]
+    }
+  } else if (back_transformation == "SM" | back_transformation == "BC2") {
+    # MSE estimation
+    nu <- model_X%*%Beta.hat
+    tau <- sigmau2 + vardir
+    # Variance of beta
+    Var.beta <- Q
+    # Variance of sigmau2
+    Deriv1 <- solve((sigmau2 * D) + diag(c(vardir), m))
+    ### Inverse of fisher information matrix. That is var. sigma2u
+    Var.sigma <- ((1/2) * sum(diag(Deriv1%*%Deriv1)))^(-1)
+
+    tmp <- NULL
+    for (i in 1:m) {
+      tmp[i] <- (t(model_X)[,i]%*%Q%*%model_X[i,])/(tau[i]^2)
+    }
+
+    mse <- NULL
+    for (j in 1:m) {
+      mse[j] <- exp(2 * (nu[j,1] + sigmau2)) * (1 - exp(-gamma[j] * vardir[j])) +
+        ((vardir[j]^2)/tau[j]^2) * exp(2 * nu[j,1] + sigmau2 * (1 + gamma[j])) * (t(model_X)[,j]%*%Q%*%model_X[j,]) +
+        Var.sigma * ((vardir[j]^2)/tau[j]^2) * exp(2 * nu[j,1] + sigmau2 * (1 + gamma[j])) *
+        ((1/4) * (1 + 3 * gamma[j])^2 + (1/tau[j])) - exp(2 * (nu[j,1] + sigmau2)) *
+        (2 * (1 - exp(-gamma[j] * vardir[j])) * (t(model_X)[,j]%*%Q%*%model_X[j,]) - Var.sigma *
+           (2 + (((vardir[j]^2)/tau[j]^2) - 2) * exp(-gamma[j] * vardir[j])) * sum(tmp) +
+           Var.sigma * (2 + (((2 * (vardir[j]^2))/(tau[j]^2)) - 2) * exp(-gamma[j] * vardir[j]) -
+           ((vardir[j]^2)/(tau[j]^3)) * exp(-gamma[j] * vardir[j]) * (1 + ((vardir[j]^2)/(2 * tau[j])))))
+    }
+
+    if(back_transformation == "BC2") {
+      mse <- mse / (c2^2)
+    }
+  } else if (back_transformation == "naive") {
+    mse <- rep(NA, m)
   }
+
 
   EBLUP_data <- data.frame(Domain = data[[domains]],
                            Direct = direct,
@@ -167,7 +203,7 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
 
   MSE_data <- data.frame(Domain = data[[domains]],
                          Var = vardir,
-                         PR_MSE = mse)
+                         MSE = mse)
 
   Gamma <- data.frame(Domain = data[[domains]],
                       Gamma = sigmau2 / (sigmau2 + vardir))
