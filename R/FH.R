@@ -161,6 +161,40 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
       # Prasad-Rao estimator
       mse[d] <- g1[d] + g2[d] + 2 * g3[d]
     }
+
+    if (method == "AMPL" | method == "AMRL") {
+      areanumber <- m
+      x <- model_X
+      psi <- matrix(c(vardir), areanumber, 1)
+      Y <- matrix(c(direct), areanumber, 1)
+      X <- x
+      Z.area <- diag(1, areanumber)
+      sigma.u_log <- interval[1]
+      I <- diag(1, areanumber)
+      #V is the variance covariance matrix
+      V <- sigma.u_log * Z.area%*%t(Z.area) + I * psi[,1]
+      Vi <- solve(V)
+      Xt <- t(X)
+      XVi <- Xt%*%Vi
+      Q <- solve(XVi%*%X)
+      P <- Vi - (Vi%*%X%*%Q%*%XVi)
+      b.s <- Q%*%XVi%*%Y
+
+      if (method == "AMPL") {
+        Bias <- (sum(diag(P - Vi)) + (2/sigmau2)) / sum(diag(Vi^2))
+        for (d in 1:m) {
+          # Adjusted mse
+          mse[d] <- mse[d] - (Bd[d]^2) * Bias
+        }
+      } else if (method == "AMRL") {
+        Bias <- (2/sigmau2) / sum(diag(Vi^2))
+        for (d in 1:m) {
+          # Adjusted mse
+          mse[d] <- mse[d] - (Bd[d]^2) * Bias
+        }
+      }
+    }
+
   } else if (back_transformation == "SM" | back_transformation == "BC2") {
     # MSE estimation
     nu <- model_X%*%Beta.hat
@@ -192,8 +226,37 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
     if(back_transformation == "BC2") {
       mse <- mse / (c2^2)
     }
-  } else if (back_transformation == "naive") {
-    mse <- rep(NA, m)
+  } else if (back_transformation == "naive") {g1 <- rep(0, m)
+  g2 <- rep(0, m)
+  g3 <- rep(0, m)
+  mse <- rep(0, m)
+  # Inverse of total variance
+  Vi <- 1/(sigmau2 + vardir)
+  # Shrinkage factor
+  Bd <- vardir/(sigmau2 + vardir)
+  # Squared inverse of total variance
+  SumAD2 <- sum(Vi^2)
+  # X'Vi
+  XtVi <- t(Vi * model_X)
+  # (X'ViX)^-1
+  Q <- solve(XtVi %*% model_X)
+
+  # 2 divided by squared inverse of total variance
+  VarA <- 2/SumAD2
+  for (d in 1:m) {
+    # Variance due to random effects: vardir * gamma
+    g1[d] <- vardir[d] * (1 - Bd[d])
+    # Covariate for single domain
+    xd <- matrix(model_X[d, ], nrow = 1, ncol = p)
+    # Variance due to the estimation of beta
+    g2[d] <- (Bd[d]^2) * xd %*% Q %*% t(xd)
+    # Variance due to the estimation of the variance of the random effects
+    g3[d] <- (Bd[d]^2) * VarA/(sigmau2 + vardir[d])
+    # Prasad-Rao estimator
+    mse[d] <- g1[d] + g2[d] + 2 * g3[d]
+  }
+
+    mse <- exp(EBLUP)^2 * mse
   }
 
 

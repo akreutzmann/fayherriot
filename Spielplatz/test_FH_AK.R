@@ -43,7 +43,7 @@ sae_FH <- mseFH(yi ~ MajorArea + newVar, SD2, data = combined_data)
 
 My_FH <- FH_AK(formula = yi ~ MajorArea + newVar, vardir = "SD2",
       combined_data = combined_data, domains = "SmallArea",
-      method = "sae_reml", interval = c(0, 1000), back_transformation = NULL)
+      method = "AMPL", interval = c(0, 1000), back_transformation = NULL)
 
 all.equal(as.numeric(sae_FH$est$eblup), as.numeric(My_FH$ind$EBLUP))
 
@@ -79,4 +79,32 @@ My_FHNaive$MSE$MSE
 My_FHSM$MSE$MSE
 My_FHBC2$MSE$MSE
 
+
+
+# Adjusted methods
+My_FHREML <- FH_AK(formula = yi ~ MajorArea + newVar, vardir = "SD2",
+                    combined_data = combined_data, domains = "SmallArea",
+                    method = "nicola_reml", interval = c(0, 1000),
+                    back_transformation = NULL)
+
+
+My_FHAMPL <- FH_AK(formula = yi ~ MajorArea + newVar, vardir = "SD2",
+                 combined_data = combined_data, domains = "SmallArea",
+                 method = "AMPL", interval = c(0, 1000),
+                 back_transformation = NULL)
+
+
+My_FHAMRL <- FH_AK(formula = yi ~ MajorArea + newVar, vardir = "SD2",
+                  combined_data = combined_data, domains = "SmallArea",
+                  method = "AMRL", interval = c(0, 1000),
+                  back_transformation = NULL)
+
+
+My_FHREML$ind$EBLUP
+My_FHAMPL$ind$EBLUP
+My_FHAMRL$ind$EBLUP
+
+My_FHREML$MSE$MSE
+My_FHAMPL$MSE$MSE
+My_FHAMRL$MSE$MSE
 
