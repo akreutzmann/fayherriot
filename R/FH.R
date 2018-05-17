@@ -18,7 +18,7 @@
 
 
 FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
-                  back_transformation, interval = c(0, 1000), precision = 0.0001,
+                  back_transformation = NULL, interval = c(0, 1000), precision = 0.0001,
                   maxiter = 100) {
 
 

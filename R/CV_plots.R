@@ -26,7 +26,7 @@ CV_plots <- function(fit_FH, label_direct = "Direct",
   x <- data.frame(Direct = fit_FH$ind$Direct,
                   Var = fit_FH$MSE$Var,
                   FH = fit_FH$ind$EBLUP,
-                  MSE = fit_FH$MSE$PR_MSE)
+                  MSE = fit_FH$MSE$MSE)
 
   x <- x[order(abs(sqrt(x$Var) / x$Direct)), ]
   x <- x[!is.na(x$Direct),]

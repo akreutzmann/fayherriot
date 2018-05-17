@@ -5,7 +5,7 @@
 \title{Function for Fay-Herriot model}
 \usage{
 FH_AK(formula, vardir, combined_data, domains = NULL, method,
-  back_transformation, interval = c(0, 1000), precision = 1e-04,
+  back_transformation = NULL, interval = c(0, 1000), precision = 1e-04,
   maxiter = 100)
 }
 \arguments{
