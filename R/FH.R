@@ -125,9 +125,33 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
   AIC <- (-2) * loglike + 2 * (p + 1)
   BIC <- (-2) * loglike + (p + 1) * log(m)
 
+  # Calculation R2
+  P <- model_X%*%solve(t(model_X)%*%model_X)%*%t(model_X)
+  SSE <- as.numeric(t(direct)%*%(diag(1,length(direct))-P)%*%direct)
+  m <- nrow(model_X)
+  p <- ncol(model_X)
+  MSE <- SSE/(m-p)
+  one <- matrix(1,m,1)
+  SST <- as.numeric(t(direct)%*%(diag(1,length(direct))-(1/m)*one%*%t(one))%*%direct)
+  MST <- SST/(m - 1)
+  R2_regular <- 1-(MSE/MST)
+
+  barD <- sum(vardir)/m
+  hii <- NULL
+  for (i in 1:m)
+  {
+    hii[i] <- as.numeric(t(model_X[i,])%*%solve(t(model_X)%*%model_X)%*%model_X[i,])
+  }
+  Dw <- sum((1 - hii) * vardir)/(m - p)
+  hxbMSE <- (2 * MSE)/(1 + exp((2 * Dw)/MSE))
+  hxbMST <- (2 * MST)/(1 + exp((2 * barD)/MST))
+  AdjR2 <- 1 - (hxbMSE/hxbMST)
+
   criteria <- data.frame(loglike = loglike,
                          AIC = AIC,
-                         BIC = BIC)
+                         BIC = BIC,
+                         R2 = R2_regular,
+                         AdjR2 = AdjR2)
 
   # Analytical MSE
   # Preparation of matrices to save MSE components
@@ -266,7 +290,10 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
 
   MSE_data <- data.frame(Domain = data[[domains]],
                          Var = vardir,
-                         MSE = mse)
+                         MSE = mse,
+                         G1 = g1,
+                         G2 = g2,
+                         G3 = g3)
 
   Gamma <- data.frame(Domain = data[[domains]],
                       Gamma = sigmau2 / (sigmau2 + vardir))
