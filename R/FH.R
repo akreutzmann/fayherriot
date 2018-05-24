@@ -219,6 +219,17 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
       }
     }
 
+    EBLUP_data <- data.frame(Domain = data[[domains]],
+                             Direct = direct,
+                             EBLUP = as.numeric(EBLUP))
+
+    MSE_data <- data.frame(Domain = data[[domains]],
+                           Var = vardir,
+                           MSE = mse,
+                           G1 = g1,
+                           G2 = g2,
+                           G3 = g3)
+
   } else if (back_transformation == "SM" | back_transformation == "BC2") {
     # MSE estimation
     nu <- model_X%*%Beta.hat
@@ -247,10 +258,24 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
            ((vardir[j]^2)/(tau[j]^3)) * exp(-gamma[j] * vardir[j]) * (1 + ((vardir[j]^2)/(2 * tau[j])))))
     }
 
-    if(back_transformation == "BC2") {
+    if (back_transformation == "BC2") {
       mse <- mse / (c2^2)
     }
-  } else if (back_transformation == "naive") {g1 <- rep(0, m)
+
+    EBLUP_data <- data.frame(Domain = data[[domains]],
+                             Direct = exp(direct),
+                             EBLUP = as.numeric(EBLUP))
+
+    MSE_data <- data.frame(Domain = data[[domains]],
+                           Var = vardir,
+                           MSE = mse
+                           #G1 = g1,
+                           #G2 = g2,
+                           #G3 = g3
+    )
+
+  } else if (back_transformation == "naive") {
+  g1 <- rep(0, m)
   g2 <- rep(0, m)
   g3 <- rep(0, m)
   mse <- rep(0, m)
@@ -281,19 +306,21 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
   }
 
     mse <- exp(EBLUP)^2 * mse
+
+    EBLUP_data <- data.frame(Domain = data[[domains]],
+                             Direct = exp(direct),
+                             EBLUP = as.numeric(EBLUP))
+
+    MSE_data <- data.frame(Domain = data[[domains]],
+                           Var = vardir,
+                           MSE = mse,
+                           G1 = g1,
+                           G2 = g2,
+                           G3 = g3
+    )
   }
 
 
-  EBLUP_data <- data.frame(Domain = data[[domains]],
-                           Direct = direct,
-                           EBLUP = as.numeric(EBLUP))
-
-  MSE_data <- data.frame(Domain = data[[domains]],
-                         Var = vardir,
-                         MSE = mse,
-                         G1 = g1,
-                         G2 = g2,
-                         G3 = g3)
 
   Gamma <- data.frame(Domain = data[[domains]],
                       Gamma = sigmau2 / (sigmau2 + vardir))
