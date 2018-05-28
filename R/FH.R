@@ -305,7 +305,7 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
     mse[d] <- g1[d] + g2[d] + 2 * g3[d]
   }
 
-    mse <- exp(EBLUP)^2 * mse
+    mse <- EBLUP^2 * mse
 
     EBLUP_data <- data.frame(Domain = data[[domains]],
                              Direct = exp(direct),
