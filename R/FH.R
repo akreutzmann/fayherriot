@@ -338,11 +338,24 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
     pred_X <- pred_data$x
     pred_y <- pred_X %*% Beta.hat
 
+    if (is.null(back_transformation)) {
+      pred_y <- pred_y
+    } else if (back_transformation == "naive") {
+      pred_y <- exp(pred_y)
+    } else if (back_transformation == "SM" | back_transformation == "BC2") {
+      pred_y <- exp(pred_y)
+      cat("Out-of-sample predictions are naively back-transformed by the
+          exponential since the bias-correction cannot be applied for
+          out-of-sample domains.")
+    }
+
     EBLUP_pred <- data.frame(Domain = combined_data[[domains]])
     EBLUP_pred$Pred_FH[obs_dom == TRUE] <- EBLUP
     EBLUP_pred$Pred_FH[obs_dom == FALSE] <- pred_y
     EBLUP_pred$Ind[obs_dom == TRUE] <- 0
     EBLUP_pred$Ind[obs_dom == FALSE] <- 1
+
+
   }
 
 
