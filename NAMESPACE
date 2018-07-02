@@ -2,6 +2,7 @@
 
 export(CV_plots)
 export(FH_AK)
+export(FH_eblup)
 export(combine_data)
 import(formula.tools)
 importFrom(ggplot2,aes)

@@ -67,8 +67,7 @@ NicolaReml <- function(interval, direct, x, vardir, areanumber) {
     b.s <- Q%*%XVi%*%Y
 
     ee = eigen(V)
-    - (areanumber/2) * log(2*pi)
-    - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
+    - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
   }
   ottimo <- optimize(A.reml, interval, maximum = TRUE,
                      vardir = vardir, areanumber = areanumber,
@@ -112,8 +111,7 @@ AMRL <- function(interval, direct, x, vardir, areanumber) {
     b.s <- Q%*%XVi%*%Y
 
     ee <- eigen(V)
-    log(sigma.u_log) - (areanumber/2) * log(2*pi)
-    - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
+    log(sigma.u_log) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
   }
 
 
@@ -159,8 +157,7 @@ AMPL <- function(interval, direct, x, vardir, areanumber) {
     b.s <- Q%*%XVi%*%Y
 
     ee = eigen(V)
-    log(sigma.u_log) - (areanumber/2) * log(2*pi)
-    - 0.5 * sum(log(ee$value)) - (0.5) * t(Y)%*%P%*%Y
+    log(sigma.u_log) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * t(Y)%*%P%*%Y
   }
 
   ottimo <- optimize(AP, interval, maximum = TRUE,
@@ -170,4 +167,39 @@ AMPL <- function(interval, direct, x, vardir, areanumber) {
   estsigma2u <- ottimo$maximum
 
   return(sigmau_ampl = estsigma2u)
+}
+
+
+
+#' Wrapper function for the estmation of sigmau2
+#'
+#' This function wraps the different estimation methods for sigmau2.
+#'
+#' @param vardir direct variance.
+#' @param precision precision criteria for the estimation of sigmau2.
+#' @param maxiter maximum of iterations for the estimation of sigmau2.
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
+
+wrapper_estsigmau2 <- function(framework, method, precision, maxiter, interval) {
+
+  sigmau2 <- if (method == "sae_reml") {
+    saeReml(vardir = framework$vardir, precision = precision, maxiter = maxiter,
+                       X = framework$model_X, y = framework$direct)
+  } else if (method == "nicola_reml") {
+    NicolaReml(interval = interval, vardir = framework$vardir, x = framework$model_X,
+                          direct = framework$direct, areanumber = framework$m)
+  } else if (method == "AMRL") {
+    AMRL(interval = interval, vardir = framework$vardir, x = framework$model_X,
+                    direct = framework$direct, areanumber = framework$m)
+  } else if (method == "AMPL") {
+    AMPL(interval = interval, vardir = framework$vardir, x = framework$model_X,
+                    direct = framework$direct, areanumber = framework$m)
+    }
+
+  return(sigmau2)
 }

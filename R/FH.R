@@ -193,7 +193,7 @@ FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
       Y <- matrix(c(direct), areanumber, 1)
       X <- x
       Z.area <- diag(1, areanumber)
-      sigma.u_log <- interval[1]
+      sigma.u_log <- sigmau2
       I <- diag(1, areanumber)
       #V is the variance covariance matrix
       V <- sigma.u_log * Z.area%*%t(Z.area) + I * psi[,1]
