@@ -125,6 +125,55 @@ AMRL <- function(interval, direct, x, vardir, areanumber) {
 }
 
 
+#' Function for estimating sigmau2 following Yoshimori and Lahiri.
+#'
+#' This function estimates sigmau2 using the adjusted maximum residual
+#' likelihood.
+#'
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param vardir direct variance.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
+
+AMRL_YL <- function(interval, direct, x, vardir, areanumber) {
+
+  AR_YL <- function(interval, direct, x, vardir, areanumber){
+    psi <- matrix(c(vardir), areanumber, 1)
+    Y <- matrix(c(direct), areanumber, 1)
+    X <- x
+    Z.area <- diag(1, areanumber)
+    sigma.u_log <- interval[1]
+    I <- diag(1, areanumber)
+    #V is the variance covariance matrix
+    V <- sigma.u_log * Z.area%*%t(Z.area) + I * psi[,1]
+    Vi <- solve(V)
+    Xt <- t(X)
+    XVi <- Xt%*%Vi
+    Q <- solve(XVi%*%X)
+    P <- Vi - (Vi%*%X%*%Q%*%XVi)
+    b.s <- Q%*%XVi%*%Y
+    Bd <- vardir/(sigma.u_log + vardir)
+    Bd_matrix <- matrix(c(Bd), areanumber, 1)
+    Bd_matrix <- I * Bd_matrix[,1]
+
+    ee <- eigen(V)
+    (1/areanumber) * log((tan(sum(diag(I - Bd_matrix)))^-1)) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
+  }
+
+
+  ottimo <- optimize(AR_YL, interval, maximum = TRUE,
+                     vardir = vardir, areanumber = areanumber,
+                     direct = direct, x = x)
+
+  estsigma2u <- ottimo$maximum
+
+  return(sigmau_amrl_yl = estsigma2u)
+}
+
+
 #' Function for estimating sigmau2 following Li and Lahiri.
 #'
 #' This function estimates sigmau2 using the adjusted maximum profile
@@ -170,6 +219,99 @@ AMPL <- function(interval, direct, x, vardir, areanumber) {
 }
 
 
+#' Function for estimating sigmau2 following Yoshimori and Lahiri.
+#'
+#' This function estimates sigmau2 using the adjusted maximum profile
+#' likelihood.
+#'
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param vardir direct variance.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
+
+AMPL_YL <- function(interval, direct, x, vardir, areanumber) {
+
+  AP_YL <- function(interval, direct, x, vardir, areanumber){
+    psi <- matrix(c(vardir), areanumber, 1)
+    Y <- matrix(c(direct), areanumber, 1)
+    X <- x
+    Z.area <- diag(1, areanumber)
+    sigma.u_log <- interval[1]
+    I <- diag(1, areanumber)
+    # V is the variance covariance matrix
+    V <- sigma.u_log * Z.area%*%t(Z.area) + I * psi[,1]
+    Vi <- solve(V)
+    Xt <- t(X)
+    XVi <- Xt%*%Vi
+    Q <- solve(XVi%*%X)
+    P <- Vi - (Vi%*%X%*%Q%*%XVi)
+    b.s <- Q%*%XVi%*%Y
+    Bd <- vardir/(sigma.u_log + vardir)
+
+    ee = eigen(V)
+    # (1/areanumber) * log((tan(sum(diag(I - Bd)))^-1)) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * t(Y)%*%P%*%Y
+    (tan(sum(diag(I - Bd)))^-1)^(1/areanumber) * (2*pi)^(-(areanumber/2)) * exp(- 0.5 * sum(log(ee$value))) * exp(-(0.5) * t(Y)%*%P%*%Y)
+  }
+
+  ottimo <- optimize(AP_YL, interval, maximum = TRUE,
+                     vardir = vardir, areanumber = areanumber,
+                     direct = direct, x = x)
+
+  estsigma2u <- ottimo$maximum
+
+  return(sigmau_ampl_yl = estsigma2u)
+}
+
+
+#' Function for estimating sigmau2 using maximum likelihood.
+#'
+#' This function estimates sigmau2 using the maximum profile
+#' likelihood.
+#'
+#' @param interval interval for the algorithm.
+#' @param direct direct estimator.
+#' @param x matrix with explanatory variables.
+#' @param vardir direct variance.
+#' @param areanumber number of domains.
+#' @return estimated sigmau2.
+#' @keywords internal
+
+MPL <- function(interval, direct, x, vardir, areanumber) {
+
+  ML <- function(interval, direct,x, vardir, areanumber){
+    psi <- matrix(c(vardir), areanumber, 1)
+    Y <- matrix(c(direct), areanumber, 1)
+    X <- x
+    Z.area <- diag(1, areanumber)
+    sigma.u_log <- interval[1]
+    I <- diag(1, areanumber)
+    # V is the variance covariance matrix
+    V <- sigma.u_log * Z.area%*%t(Z.area) + I * psi[,1]
+    Vi <- solve(V)
+    Xt <- t(X)
+    XVi <- Xt%*%Vi
+    Q <- solve(XVi%*%X)
+    P <- Vi - (Vi%*%X%*%Q%*%XVi)
+    b.s <- Q%*%XVi%*%Y
+
+    ee = eigen(V)
+    -(areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * t(Y)%*%P%*%Y
+    # (2*pi)^(-(areanumber/2)) * exp(- 0.5 * sum(log(ee$value))) * exp(-(0.5) * t(Y)%*%P%*%Y)
+  }
+
+  ottimo <- optimize(ML, interval, maximum = TRUE,
+                     vardir = vardir, areanumber = areanumber,
+                     direct = direct, x = x)
+
+  estsigma2u <- ottimo$maximum
+
+  return(sigmau_mpl = estsigma2u)
+}
+
+
 
 #' Wrapper function for the estmation of sigmau2
 #'
@@ -196,10 +338,19 @@ wrapper_estsigmau2 <- function(framework, method, precision, maxiter, interval) 
   } else if (method == "AMRL") {
     AMRL(interval = interval, vardir = framework$vardir, x = framework$model_X,
                     direct = framework$direct, areanumber = framework$m)
+  } else if (method == "AMRL_YL") {
+    AMRL_YL(interval = interval, vardir = framework$vardir, x = framework$model_X,
+         direct = framework$direct, areanumber = framework$m)
   } else if (method == "AMPL") {
     AMPL(interval = interval, vardir = framework$vardir, x = framework$model_X,
+         direct = framework$direct, areanumber = framework$m)
+  } else if (method == "AMPL_YL") {
+    AMPL_YL(interval = interval, vardir = framework$vardir, x = framework$model_X,
                     direct = framework$direct, areanumber = framework$m)
-    }
+  } else if (method == "ML") {
+    MPL(interval = interval, vardir = framework$vardir, x = framework$model_X,
+         direct = framework$direct, areanumber = framework$m)
+  }
 
   return(sigmau2)
 }

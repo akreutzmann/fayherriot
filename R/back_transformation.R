@@ -12,30 +12,30 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
 
   if (transformation == "log_crude") {
 
-    PR_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                               eblup = eblup, combined_data = combined_data,
+    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                               combined_data = combined_data,
                                method = method)
 
-    EBLUP_data$EBLUP <- exp(eblup$EBLUP_data$EBLUP + 0.5 * PR_MSE$MSE_data$MSE)
-    MSE_data$MSE <- exp(eblup$EBLUP_data$EBLUP)^2 * PR_MSE$MSE_data$MSE
+    EBLUP_data$EBLUP <- exp(eblup$EBLUP_data$EBLUP + 0.5 * estim_MSE$MSE_data$MSE)
+    MSE_data$MSE <- exp(eblup$EBLUP_data$EBLUP)^2 * estim_MSE$MSE_data$MSE
   } else if (transformation == "log_SM") {
 
-    PR_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                             eblup = eblup, combined_data = combined_data,
+    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                             combined_data = combined_data,
                              method = method)
 
     EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))
-    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * PR_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
 
     SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
                          eblup = eblup)
 
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE]
-    MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * PR_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+    MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
   } else if (transformation == "log_BC2") {
 
-    PR_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                             eblup = eblup, combined_data = combined_data,
+    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                             combined_data = combined_data,
                              method = method)
 
     SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
@@ -71,10 +71,10 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     c2 <- exp(0.5 * (A + (B1 - B2) * II))
 
     EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP + (0.5 * sigmau2 * (1 - eblup$gamma)))/c2
-    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * PR_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
 
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE] / (c2^2)
-    MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * PR_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+    MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
 
   }
 

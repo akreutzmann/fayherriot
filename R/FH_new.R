@@ -49,7 +49,7 @@ FH_eblup <- function(formula, vardir, combined_data, domains = NULL, method,
 
     # Analytical MSE
     MSE_data <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                               eblup = eblup, combined_data = combined_data,
+                               combined_data = combined_data,
                                method = method)
 
 

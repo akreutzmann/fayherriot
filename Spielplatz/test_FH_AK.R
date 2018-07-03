@@ -15,6 +15,8 @@ combined_data <- read.csv("C:/Users/akreutzmann/Dropbox/QUESSAMI/Kooperation mit
 
 
 # Have example with sae code
+#
+# 1. REML
 sae_FH <- mseFH(yi ~ MajorArea + newVar, SD2, data = combined_data)
 
 My_FH <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
@@ -29,6 +31,23 @@ as.numeric(My_FH$ind$EBLUP)
 c(sae_FH$mse)
 as.numeric(My_FH$MSE$MSE)
 
+# 2. ML
+sae_FH <- mseFH(yi ~ MajorArea + newVar, SD2, data = combined_data,
+                method = "ML")
+
+My_FH <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
+                  combined_data = combined_data, domains = "SmallArea",
+                  method = "ML", interval = c(0, 1000), transformation = "no")
+
+all.equal(as.numeric(sae_FH$est$eblup), as.numeric(My_FH$ind$EBLUP))
+all.equal(as.numeric(sae_FH$mse), as.numeric(My_FH$MSE$MSE))
+
+c(sae_FH$est$eblup)
+as.numeric(My_FH$ind$EBLUP)
+c(sae_FH$mse)
+as.numeric(My_FH$MSE$MSE)
+
+
 # The results using the code from the sae package and my code return the same
 # results using REML estimation
 
@@ -40,13 +59,13 @@ My_FHCrude <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
 
 My_FHSM <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
                     combined_data = combined_data, domains = "SmallArea",
-                    method = "sae_reml", interval = c(0, 1000),
+                    method = "ML", interval = c(0, 1000),
                     transformation = "log_SM")
 
 
 My_FHBC2 <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
                  combined_data = combined_data, domains = "SmallArea",
-                 method = "sae_reml", interval = c(0, 1000),
+                 method = "ML", interval = c(0, 1000),
                  transformation = "log_BC2")
 
 
@@ -54,10 +73,16 @@ My_FHCrude$ind$EBLUP
 My_FHSM$ind$EBLUP
 My_FHBC2$ind$EBLUP
 
+My_FHCrude$sigmau2
+My_FHSM$sigmau2
+
+summary((My_FHCrude$ind$EBLUP - My_FHSM$ind$EBLUP)/My_FHSM$ind$EBLUP * 100)
+
 My_FHCrude$MSE$MSE
 My_FHSM$MSE$MSE
 My_FHBC2$MSE$MSE
 
+sum(My_FHCrude$MSE$MSE < My_FHSM$MSE$MSE)/length(My_FHSM$MSE$MSE)
 
 
 # Adjusted methods
@@ -78,10 +103,24 @@ My_FHAMRL <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
                   method = "AMRL", interval = c(0, 1000),
                   transformation = "no")
 
+My_FHAMPL_YL <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
+                      combined_data = combined_data, domains = "SmallArea",
+                      method = "AMPL_YL", interval = c(0.0001, 1000),
+                      transformation = "no")
+
+
+My_FHAMRL_YL <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
+                      combined_data = combined_data, domains = "SmallArea",
+                      method = "AMRL_YL", interval = c(0.0001, 1000),
+                      transformation = "no")
+
+
 
 My_FHREML$sigmau2
 My_FHAMPL$sigmau2
 My_FHAMRL$sigmau2
+My_FHAMPL_YL$sigmau2
+My_FHAMRL_YL$sigmau2
 
 
 My_FHREML$ind$EBLUP
