@@ -105,13 +105,13 @@ My_FHAMRL <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
 
 My_FHAMPL_YL <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
                       combined_data = combined_data, domains = "SmallArea",
-                      method = "AMPL_YL", interval = c(0.0001, 1000),
+                      method = "AMPL_YL", interval = c(0, 1000),
                       transformation = "no")
 
 
 My_FHAMRL_YL <- FH_eblup(formula = yi ~ MajorArea + newVar, vardir = "SD2",
                       combined_data = combined_data, domains = "SmallArea",
-                      method = "AMRL_YL", interval = c(0.0001, 1000),
+                      method = "AMRL_YL", interval = c(0, 1000),
                       transformation = "no")
 
 
@@ -126,8 +126,12 @@ My_FHAMRL_YL$sigmau2
 My_FHREML$ind$EBLUP
 My_FHAMPL$ind$EBLUP
 My_FHAMRL$ind$EBLUP
+My_FHAMPL_YL$ind$EBLUP
+My_FHAMRL_YL$ind$EBLUP
 
 My_FHREML$MSE$MSE
 My_FHAMPL$MSE$MSE
 My_FHAMRL$MSE$MSE
+My_FHAMPL_YL$MSE$MSE
+My_FHAMRL_YL$MSE$MSE
 

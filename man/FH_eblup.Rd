@@ -5,7 +5,7 @@
 \title{Function for Fay-Herriot model}
 \usage{
 FH_eblup(formula, vardir, combined_data, domains = NULL, method,
-  transformation = NULL, interval = c(0, 1000), precision = 1e-04,
+  transformation = "no", interval = c(0, 1000), precision = 1e-04,
   maxiter = 100)
 }
 \arguments{

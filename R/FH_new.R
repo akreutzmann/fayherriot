@@ -19,7 +19,7 @@
 
 
 FH_eblup <- function(formula, vardir, combined_data, domains = NULL, method,
-                     transformation = NULL, interval = c(0, 1000), precision = 0.0001,
+                     transformation = "no", interval = c(0, 1000), precision = 0.0001,
                      maxiter = 100) {
 
 

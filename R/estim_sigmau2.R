@@ -67,7 +67,8 @@ NicolaReml <- function(interval, direct, x, vardir, areanumber) {
     b.s <- Q%*%XVi%*%Y
 
     ee = eigen(V)
-    - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
+    -(areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
+    #(2*pi)^(-(areanumber/2)) * exp(-0.5 * sum(log(ee$value))) * exp(-(0.5) * log(det(t(X)%*%Vi%*%X))) * exp(-(0.5) * t(Y)%*%P%*%Y)
   }
   ottimo <- optimize(A.reml, interval, maximum = TRUE,
                      vardir = vardir, areanumber = areanumber,
@@ -155,14 +156,12 @@ AMRL_YL <- function(interval, direct, x, vardir, areanumber) {
     Q <- solve(XVi%*%X)
     P <- Vi - (Vi%*%X%*%Q%*%XVi)
     b.s <- Q%*%XVi%*%Y
-    Bd <- vardir/(sigma.u_log + vardir)
-    Bd_matrix <- matrix(c(Bd), areanumber, 1)
-    Bd_matrix <- I * Bd_matrix[,1]
+    Bd <- diag(vardir/(sigma.u_log + vardir))
 
     ee <- eigen(V)
-    (1/areanumber) * log((tan(sum(diag(I - Bd_matrix)))^-1)) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
+    atan(sum(diag((I - Bd))))^(1/areanumber) * (2*pi)^(-(areanumber/2)) * exp(-0.5 * sum(log(ee$value))) * exp(-(0.5) * log(det(t(X)%*%Vi%*%X))) * exp(-(0.5) * t(Y)%*%P%*%Y)
+    # (1/areanumber) * log((tan(sum(diag(I - Bd)))^-1)) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * log(det(t(X)%*%Vi%*%X)) - (0.5) * t(Y)%*%P%*%Y
   }
-
 
   ottimo <- optimize(AR_YL, interval, maximum = TRUE,
                      vardir = vardir, areanumber = areanumber,
@@ -249,17 +248,17 @@ AMPL_YL <- function(interval, direct, x, vardir, areanumber) {
     Q <- solve(XVi%*%X)
     P <- Vi - (Vi%*%X%*%Q%*%XVi)
     b.s <- Q%*%XVi%*%Y
-    Bd <- vardir/(sigma.u_log + vardir)
+    Bd <- diag(vardir/(sigma.u_log + vardir))
 
     ee = eigen(V)
-    # (1/areanumber) * log((tan(sum(diag(I - Bd)))^-1)) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * t(Y)%*%P%*%Y
-    (tan(sum(diag(I - Bd)))^-1)^(1/areanumber) * (2*pi)^(-(areanumber/2)) * exp(- 0.5 * sum(log(ee$value))) * exp(-(0.5) * t(Y)%*%P%*%Y)
+    #(1/areanumber) * log((tan(sum(diag(I - Bd)))^-1)) - (areanumber/2) * log(2*pi) - 0.5 * sum(log(ee$value)) - (0.5) * t(Y)%*%P%*%Y
+    (atan(sum(diag((I - Bd)))))^(1/areanumber) * (2*pi)^(-(areanumber/2)) * exp(-0.5 * sum(log(ee$value))) * exp(-(0.5) * t(Y)%*%P%*%Y)
+    #sigma.u_log * (2*pi)^(-(areanumber/2)) * exp(-0.5 * sum(log(ee$value))) * exp(-(0.5) * t(Y)%*%P%*%Y)
   }
 
   ottimo <- optimize(AP_YL, interval, maximum = TRUE,
                      vardir = vardir, areanumber = areanumber,
                      direct = direct, x = x)
-
   estsigma2u <- ottimo$maximum
 
   return(sigmau_ampl_yl = estsigma2u)
