@@ -46,8 +46,8 @@ prasad_rao <- function(framework, sigmau2, combined_data) {
     # Covariates for out-of-sample domains
     pred_data_tmp <- combined_data[framework$obs_dom == FALSE,]
     pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
-    lhs(formula) <- quote(helper)
-    pred_data <- makeXY(formula = formula, data = pred_data_tmp)
+    lhs(framework$formula) <- quote(helper)
+    pred_data <- makeXY(formula = framework$formula, data = pred_data_tmp)
     pred_X <- pred_data$x
 
     for (d_out in 1:(framework$M - framework$m)) {
@@ -102,8 +102,8 @@ datta_lahiri <- function(framework, sigmau2, combined_data) {
     # Covariates for out-of-sample domains
     pred_data_tmp <- combined_data[framework$obs_dom == FALSE,]
     pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
-    lhs(formula) <- quote(helper)
-    pred_data <- makeXY(formula = formula, data = pred_data_tmp)
+    lhs(framework$formula) <- quote(helper)
+    pred_data <- makeXY(formula = framework$formula, data = pred_data_tmp)
     pred_X <- pred_data$x
 
     for (d_out in 1:(framework$M - framework$m)) {
@@ -224,7 +224,7 @@ yoshimori_lahiri <- function(framework, sigmau2, combined_data, method) {
 }
 
 
-slud_maiti <- function(framework, sigmau2, eblup) {
+slud_maiti <- function(framework, sigmau2, eblup, combined_data) {
 
   # MSE estimation
   nu <- framework$model_X%*%eblup$coefficients$coefficients

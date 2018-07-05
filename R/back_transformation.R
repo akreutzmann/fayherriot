@@ -28,7 +28,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
 
     SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
-                         eblup = eblup)
+                         eblup = eblup, combined_data = combined_data)
 
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE]
     MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
@@ -39,7 +39,8 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                              method = method)
 
     SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
-                         eblup = eblup)
+                         eblup = eblup, combined_data = combined_data)
+
 
     D <- diag(1, framework$m)
     Deriv1 <- solve((sigmau2 * D) + diag(c(framework$vardir), framework$m))
@@ -70,7 +71,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     c1 <- exp(0.5 * (A + B1 * II))
     c2 <- exp(0.5 * (A + (B1 - B2) * II))
 
-    EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP + (0.5 * sigmau2 * (1 - eblup$gamma)))/c2
+    EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))/c2
     EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
 
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE] / (c2^2)

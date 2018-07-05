@@ -34,6 +34,7 @@ framework_FH <- function(combined_data, formula, vardir, domains,
 
   framework_out <- list(obs_dom = obs_dom,
                         data = data,
+                        formula = formula,
                         direct = direct,
                         direct_orig = direct_orig,
                         model_X = model_X,

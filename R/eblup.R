@@ -44,8 +44,8 @@ eblup_FH <- function(framework, sigmau2, combined_data) {
     pred_data_tmp <- combined_data[framework$obs_dom == FALSE,]
 
     pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
-    lhs(formula) <- quote(helper)
-    pred_data <- makeXY(formula = formula, data = pred_data_tmp)
+    lhs(framework$formula) <- quote(helper)
+    pred_data <- makeXY(formula = framework$formula, data = pred_data_tmp)
 
     pred_X <- pred_data$x
     pred_y <- pred_X %*% Beta.hat
