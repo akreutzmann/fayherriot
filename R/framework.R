@@ -11,8 +11,8 @@ framework_FH <- function(combined_data, formula, vardir, domains,
   vardir <- data[, vardir]
   direct_orig <- NULL
   vardir_orig <- NULL
-  #direct_orig <- direct
-  #vardir_orig <- vardir
+  direct_orig <- direct
+  vardir_orig <- vardir
 
   if (transformation == "log_crude" | transformation == "log_SM" | transformation == "log_BC2") {
     direct_orig <- direct

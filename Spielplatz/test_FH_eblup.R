@@ -1,6 +1,6 @@
 # Load data
 library(readstata13)
-milk <- read.dta13("H:/STATA SAE/R Code/milk.dta")
+milk <- read.dta13("H:/STATA_SAE/R Code/milk.dta")
 
 # Install source package
 install.packages("H:/fayherriot_0.1.0.tar.gz", repos = NULL, type = "source")

@@ -24,12 +24,13 @@ eblup_FH <- function(framework, sigmau2, combined_data) {
                              p.value = pvalue)
 
   # Computation of the EBLUP
-  real_res <- framework$direct - c(framework$model_X%*%Beta.hat)
+  res <- framework$direct - c(framework$model_X%*%Beta.hat)
   sigmau2Diag <- sigmau2*D
-  u.hat <- sigmau2Diag%*%t(D)%*%Vi%*%real_res
+  u.hat <- sigmau2Diag%*%t(D)%*%Vi%*%res
 
   # Computation of shrinkage factor
   gamma <- sigmau2 / (sigmau2 + framework$vardir)
+  real_res <- framework$direct - (framework$model_X%*%Beta.hat + D%*%u.hat)
 
 
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])

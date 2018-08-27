@@ -25,14 +25,16 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                              method = method)
 
     EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))
-    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+    #EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- NA
 
     SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
                          eblup = eblup, combined_data = combined_data)
 
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE]
-    MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
-  } else if (transformation == "log_BC2") {
+    # MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    } else if (transformation == "log_BC2") {
 
     estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
                              combined_data = combined_data,
@@ -72,10 +74,12 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     c2 <- exp(0.5 * (A + (B1 - B2) * II))
 
     EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))/c2
-    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+    #EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- NA
 
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE] / (c2^2)
-    MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+    #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
 
   }
 
