@@ -67,7 +67,7 @@ or "\code{AMPL_YL}").}
 \item{MSE_method}{applied MSE estimation method ("\code{Prasad_Rao}",
 "\code{Datta_Lahiri}", "\code{AMRL_corrected}", "\code{AMPL_corrected}",
 "\code{AMRL_YL_corrected}","\code{AMPL_YL_corrected}").}
-\item{transformation}{ a character string indicating the applied transformation
+\item{transformation}{a character string indicating the applied transformation
 and back transformation method.}
 \item{coefficients}{a data frame containing the estimated model coefficients
 (betas), the standard errors,
