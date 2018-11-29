@@ -1,5 +1,5 @@
 framework_FH <- function(combined_data, formula, vardir, domains,
-                         transformation) {
+                         transformation, eff_smpsize) {
   # Get sample and population data
   obs_dom <- !is.na(combined_data[[paste(lhs(formula))]])
 
@@ -19,6 +19,11 @@ framework_FH <- function(combined_data, formula, vardir, domains,
     vardir_orig <- vardir
     vardir <- (1 / direct)^2 * vardir
     direct <- log(direct)
+  } else if (transformation == "arcsin") {
+    direct_orig <- direct
+    vardir_orig <- vardir
+    direct <- asin(sqrt(direct))
+    vardir <-  1/ (4 * data[, eff_smpsize])
   }
 
 
@@ -42,6 +47,7 @@ framework_FH <- function(combined_data, formula, vardir, domains,
                         model_X = model_X,
                         vardir = vardir,
                         vardir_orig = vardir_orig,
+                        eff_smpsize = eff_smpsize,
                         domains = domains,
                         m = m,
                         M = M,

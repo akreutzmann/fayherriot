@@ -1,6 +1,8 @@
 
 backtransformed <- function(framework, sigmau2, eblup, transformation,
-                            combined_data, method) {
+                            combined_data, method,
+                            precision, maxiter,
+                            interval, alpha) {
 
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])
   EBLUP_data$direct <- NA
@@ -81,6 +83,22 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
     MSE_data$MSE[framework$obs_dom == FALSE] <- NA
 
+    } else if (transformation == "arcsin") {
+
+
+      EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
+
+      EBLUP_data$EBLUP[EBLUP_data$EBLUP < 0] <- 0
+      EBLUP_data$EBLUP[EBLUP_data$EBLUP > (pi / 2)] <- (pi / 2)
+
+      EBLUP_data$EBLUP <- (sin(EBLUP_data$EBLUP))^2
+      conf_int <- boot_arcsin(sigmau2 = sigmau2, combined_data = combined_data,
+                              framework = framework, eblup = eblup,  B = 20,
+                              method = method,
+                              precision = precision, maxiter = maxiter,
+                              interval = interval, alpha = alpha)
+      MSE_data$Li <- conf_int$Li
+      MSE_data$Ui <- conf_int$Ui
   }
 
   EBLUP_data$ind[framework$obs_dom == TRUE] <- 0

@@ -11,6 +11,7 @@
 #' @param precision precision criteria for the estimation of sigmau2.
 #' @param maxiter maximum of iterations for the estimation of sigmau2.
 #' @param transformation choses type of transformation and back-transformation.
+#' @param eff_smpsize Effective sample size.
 #' @return fitted FH model.
 #' @import formula.tools
 #' @importFrom stats median model.frame model.matrix model.response optimize
@@ -19,14 +20,15 @@
 
 
 FH_eblup <- function(formula, vardir, combined_data, domains = NULL, method,
-                     transformation = "no", interval = c(0, 1000), precision = 0.0001,
-                     maxiter = 100) {
+                     transformation = "no", eff_smpsize, interval = c(0, 1000),
+                     precision = 0.0001, maxiter = 100, alpha = alpha) {
 
 
   # Notational framework
   framework <- framework_FH(combined_data = combined_data, formula = formula,
                             vardir = vardir, domains = domains,
-                            transformation = transformation)
+                            transformation = transformation,
+                            eff_smpsize = eff_smpsize)
 
 
   # Estimate sigma u
@@ -79,7 +81,9 @@ FH_eblup <- function(formula, vardir, combined_data, domains = NULL, method,
                                    sigmau2 = sigmau2, eblup = eblup,
                                    transformation = transformation,
                                    combined_data = combined_data,
-                                   method = method)
+                                   method = method,
+                                   precision = precision, maxiter = maxiter,
+                                   interval = interval, alpha = alpha)
 
     out <- list(ind = result_data$EBLUP_data,
                 MSE = result_data$MSE_data,

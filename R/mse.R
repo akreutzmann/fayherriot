@@ -313,3 +313,122 @@ analytical_mse <- function(framework, sigmau2, combined_data,
 
   return(mse_out)
   }
+
+
+boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
+                        eblup, B = 20, method = method,
+                        precision = precision, maxiter = maxiter,
+                        interval = interval, alpha = alpha) {
+
+
+  M <- framework$M
+  m <- framework$m
+  vardir <- framework$vardir
+  eff_smpsize <- framework$eff_smpsize
+  x <- framework$model_X
+
+  Li <- rep(NA, M)
+  Ui <- rep(NA, M)
+
+  ### Bootstrap
+    ti <- matrix(NA, M, B)
+    boots_est <- matrix(NA, M, B)
+    boots_par <- matrix(NA, M, B)
+    in_sample <- framework$obs_dom == TRUE
+    out_sample <- framework$obs_dom == FALSE
+
+    for (b in 1:B){
+
+      set.seed(b)
+
+      v_boot <- rnorm(M, 0, sqrt(sigmau2))
+      e_boot <- rnorm(m, 0, sqrt(vardir))
+
+      # Get covariates for all domains
+      pred_data_tmp <- combined_data
+      pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
+      lhs(framework$formula) <- quote(helper)
+      pred_data <- makeXY(formula = framework$formula, data = pred_data_tmp)
+
+      pred_X <- pred_data$x
+
+
+      Xbeta_boot <- pred_X %*% eblup$coefficients$coefficients
+
+
+      ## Theta under transformation
+      theta <- Xbeta_boot[, 1] + v_boot
+
+      ## Truncation
+      true_value_boot <- Xbeta_boot + v_boot
+      true_value_boot[true_value_boot < 0] <- 0
+      true_value_boot[true_value_boot > (pi / 2)] <- (pi / 2)
+
+      ## Back-transformation
+      true_value_boot <- (sin(true_value_boot))^2
+      boots_par[,b] <- true_value_boot
+      boots_par[,b] <- Xbeta_boot + v_boot
+
+      ystar <- Xbeta_boot[in_sample] + v_boot[in_sample] + e_boot
+
+      ## Estimation of beta_boot
+      framework2 <- framework
+      framework2$direct <- ystar
+      sigmau2_boot <- wrapper_estsigmau2(framework = framework2, method = method,
+                                    precision = precision, maxiter = maxiter,
+                                    interval = interval)
+
+
+      ## Computation of the coefficients'estimator (Bstim)
+      D <- diag(1, m)
+      V <- sigmau2_boot*D%*%t(D) + diag(as.numeric(vardir))
+      Vi <- solve(V)
+      Q <- solve(t(x)%*%Vi%*%x)
+      Beta.hat_boot <- Q%*%t(x)%*%Vi%*%ystar
+
+      ## Computation of the EBLUP
+      res <- ystar - c(x%*%Beta.hat_boot)
+      Sigma.u <- sigmau2_boot*D
+      u.hat <- Sigma.u%*%t(D)%*%Vi%*%res
+
+      ## Small area mean
+      est_mean_boot <- x%*%Beta.hat_boot+D%*%u.hat
+      Bi <- as.numeric(vardir)/(sigmau2_boot + as.numeric(vardir))
+      ti[in_sample, b] <- (theta[in_sample] - est_mean_boot)/sqrt(as.numeric(vardir)*(1 - Bi))
+
+      ## Synthetic prediction for out-of-sample
+      pred_out_boot <- pred_X%*%Beta.hat_boot
+      ti[out_sample, b]<-(theta[out_sample] - pred_out_boot[out_sample])/sqrt(sigmau2_boot)
+
+      print(b)
+    } # End of bootstrap runs
+
+    qi <- matrix(NA, M, 2)
+
+    for (i in 1:M) {
+      qi[i,1] <- quantile(ti[i,], prob = alpha/2, na.rm = T)
+      qi[i,2] <- quantile(ti[i,], prob = (1 - alpha/2), na.rm = T)
+    }
+
+    Li <- matrix(NA, M, 1)
+    Ui <- matrix(NA, M, 1)
+
+    Di <- rep(NA, M)
+    Di[in_sample] <- vardir
+    Di[out_sample] <- (1 / (4 * mean(combined_data[in_sample, eff_smpsize])))
+    Bi.tot <- as.numeric(Di) / (sigmau2 + as.numeric(Di))
+
+
+    Li <- (eblup$EBLUP_data$EBLUP + qi * sqrt(Di * (1 - Bi.tot)))[,1]
+    Ui <- (eblup$EBLUP_data$EBLUP + qi * sqrt(Di * (1 - Bi.tot)))[,2]
+
+    ### Truncation
+    Li[Li < 0] <- 0
+    Ui[Ui > (pi / 2)] <- (pi / 2)
+
+    ### Back-transformation
+    Li <- (sin(Li))^2
+    Ui <- (sin(Ui))^2
+
+    conf_int <- data.frame(Li = Li, Ui = Ui)
+}
