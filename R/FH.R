@@ -1,377 +1,182 @@
-#' Function for Fay-Herriot model
+#' EBLUPs and their corresponding MSE estimates for the Fay-Herriot model
 #'
-#' This function conducts the estimation of a Fay-Herriot model.
+#' This function conducts the estimation of EBLUPS and MSEs based on a Fay-Herriot
+#' model. Extended fitting methods can be chosen. And different back-transformations
+#' of log transformed Fay-Herriot models can be selected.
 #'
-#' @param formula formula object.
-#' @param vardir direct variance.
-#' @param combined_data combined data.
-#' @param domains domain level.
-#' @param method method for the estimation of sigmau2.
-#' @param interval interval for the estimation of sigmau2.
-#' @param precision precision criteria for the estimation of sigmau2.
-#' @param maxiter maximum of iterations for the estimation of sigmau2.
-#' @return fitted FH model.
+#' @param formula a formula object of the form: target variable ~ explanatory
+#' variable 1 + explanatory variable 2 + ... .
+#' @param vardir a character string indicating the name of the variable containing
+#' the domain-specific sampling variances of the direct estimators that are
+#' included in \code{combined_data} set.
+#' @param combined_data a combined data set containing the direct estimates,
+#' the sampling variances, the explanatory variables and the domains.
+#' @param domains a character string indicating the domain variable that is
+#' included in \code{combined_data}. If \code{NULL}, the domains are numbered
+#' consecutively.
+#' @param method a character string describing the method for the estimation of
+#' the variance of the random effects. Methods that can be chosen (i) restricted
+#' maximum likelihood (REML) method following the \pkg{sae} package ("\code{sae_reml}"),
+#' (ii) restricted maximum likelihood method ("\code{nicola_reml}"), (iii) maximum
+#' likelihood method ("\code{ML}"), (iv) adjusted REML following
+#' \cite{Li and Lahiri (2010)} ("\code{AMRL}"), adjusted ML following
+#' \cite{Li and Lahiri (2010)} ("\code{AMPL}"), (v) adjusted REML following
+#' \cite{Yoshimori and Lahiri (2014)} ("\code{AMRL_YL}"), (vi) adjusted ML
+#' following \cite{Yoshimori and Lahiri (2014)} ("\code{AMRL_YL}"). Defaults to
+#' "\code{nicola_reml}".
+#' @param transformation a character string. No transformation and log
+#' transformation of the dependent variable with different back transformations
+#' can be chosen (i) no transformation ("\code{no}"), (ii) crude back-transformation
+#' ("\code{log_crude}"), (iii) back transformation following
+#' \cite{Slud and Maiti (2006)} ("\code{log_SM}"),
+#' (iv) back transformation following \cite{Chandra et al. (2017)} (Taylor series
+#' approximation bias correction) ("\code{log_BC2}"). Defaults to "\code{no}".
+#' @param interval a numeric vector containing a lower and upper limit for the
+#' estimation of \code{sigmau2}. Default is set to \code{c(0,1000)}. In some cases
+#' it may be more suitbale to choose a larger interval.
+#' @param precision a precision criteria for the estimation of \code{sigmau2}.
+#' Defaults to \code{0.0001}.
+#' @param maxiter maximum of iterations for the estimation of \code{sigmau2}.
+#' Defaults to \code{100}.
+#' @details When choosing the back transformation "\code{log_SM}" \code{log_BC2}",
+#' the variance estimation method must set to "\code{ML}" and the EBLUP and MSE
+#' estimates are only returned for in-sample domains.
+#' @return The function \code{FH_eblup} returns a list containing the following
+#' objects:
+#' \item{ind}{a data frame containing the domains, the direct estimates, the EBLUP
+#' estimates and a variable indicating wheter the domain is an in- or out-of-sample
+#' domain (0/1).}
+#' \item{MSE}{a data frame containing the domains, the sampling variances, the MSE
+#' estimates and a variable indicating wheter the domain is an in- or out-of-sample
+#' domain (0/1).}
+#' \item{method}{applied variance estimation method ("\code{sae_reml}",
+#' "\code{nicola_reml}", "\code{ML}", "\code{AMRL}", "\code{AMPL}", "\code{AMRL_YL}"
+#' or "\code{AMPL_YL}").}
+#' \item{MSE_method}{applied MSE estimation method ("\code{Prasad_Rao}",
+#' "\code{Datta_Lahiri}", "\code{AMRL_corrected}", "\code{AMPL_corrected}",
+#' "\code{AMRL_YL_corrected}","\code{AMPL_YL_corrected}").}
+#' \item{transformation}{a character string indicating the applied transformation
+#' and back transformation method.}
+#' \item{coefficients}{a data frame containing the estimated model coefficients
+#' (betas), the standard errors,
+#' \code{t}- and \code{p}-values of the explanatory variables.}
+#' \item{sigmau2}{estimated variance of the random effects.}
+#' \item{random_effects}{a matrix containing the random effects per domain.}
+#' \item{real_residuals}{a matrix containing the real residuals per domain.}
+#' \item{gamma}{a data frame containing the shrinkage factors per domain.}
+#' \item{model_select}{a data frame containing different model selection and
+#' accuracy criteria: loglikelihood,
+#' Akaike information criterion (AIC), Bayesian information criterion (BIC),
+#' R2 and adjusted R2 following \cite{Lahiri and Suntornchost (2015)}.}
+#' @references
+#' Chandra, H., Aditya, K. and Kumar, S. (2017), Small-area estimation under a
+#' log-transformed area-level model, Journal of Statistical Theory and Practice
+#' 12(3), 497-505. \cr \cr
+#' Datta, G. S. and Lahiri, P. (2000), A unified measure of uncertainty of
+#' estimated best linear unbiased predictors in small area estimation problems,
+#' Statistica Sinica 10(2), 613-627. \cr \cr
+#' Fay, R. E. and Herriot, R. A. (1979), Estimates of income for small places:
+#' An application of James-Stein procedures to census data, Journal of the
+#' American Statistical Association 74(366), 269-277. \cr \cr
+#' Lahiri, P. and Suntornchost, J. (2015), Variable selection for linear mixed
+#' models with applications in small area estimation, The Indian Journal of
+#' Statistics 77-B(2), 312-320.
+#' Li, H. and Lahiri, P. (2010), An adjusted maximum likelihood method for solving
+#' small area estimation problems, Journal of Multivariate Analyis 101, 882-902. \cr \cr
+#' Prasad, N. and Rao, J. (1990), The estimation of the mean squared error of
+#' small-area estimation, Journal of the American Statistical Association 85(409),
+#' 163-171. \cr \cr
+#' Rao, J. N. K. and Molina, I. (2015), Small area estimation', New York: Wiley. \cr \cr
+#' Slud, E. and Maiti, T. (2006), Mean-squared error estimation in transformed
+#' Fay-Herriot models, Journal of the Royal Statistical Society: Series B 68(2),
+#' 239-257.\cr \cr
+#' Yoshimori, M. and Lahiri, P. (2014), A new adjusted maximum likelihood method
+#' for the Fay-Herriot small area model, Journal of Multivariate Analysis
+#' 124, 281-294.
 #' @import formula.tools
 #' @importFrom stats median model.frame model.matrix model.response optimize
 #' @importFrom stats pnorm rnorm
 #' @export
 
 
-FH_AK <- function(formula, vardir, combined_data, domains = NULL, method,
-                  back_transformation = NULL, interval = c(0, 1000), precision = 0.0001,
-                  maxiter = 100) {
+FH_eblup <- function(formula, vardir, combined_data, domains = NULL, method,
+                     transformation = "no", interval = c(0, 1000), precision = 0.0001,
+                     maxiter = 100) {
 
 
-  # Get sample and population data
-  obs_dom <- !is.na(combined_data[[paste(lhs(formula))]])
+  # Notational framework
+  framework <- framework_FH(combined_data = combined_data, formula = formula,
+                            vardir = vardir, domains = domains,
+                            transformation = transformation)
 
-  data <- combined_data[obs_dom == TRUE,]
-
-  # Get response variable and model matrix from formula and data
-  direct <- makeXY(formula, data)$y
-  model_X <- makeXY(formula, data)$x
-  vardir <- data[, vardir]
-
-
-
-  if (is.null(domains)) {
-    data$domains <- 1:length(direct)
-    domains <- "domains"
-  }
-
-  # Number of areas
-  m <- length(direct)
-  M <- length(combined_data[[paste(lhs(formula))]])
-  # Number of covariates
-  p <- ncol(model_X)
 
   # Estimate sigma u
-  if (method == "sae_reml") {
-    sigmau2 <- saeReml(vardir = vardir, precision = precision, maxiter = maxiter,
-                       X = model_X, y = direct)
-  } else if (method == "nicola_reml") {
-    sigmau2 <- NicolaReml(interval = interval, vardir = vardir, x = model_X,
-                          direct = direct, areanumber = m)
-  } else if (method == "AMRL") {
-    sigmau2 <- AMRL(interval = interval, vardir = vardir, x = model_X,
-                    direct = direct, areanumber = m)
-  } else if (method == "AMPL") {
-    sigmau2 <- AMPL(interval = interval, vardir = vardir, x = model_X,
-                    direct = direct, areanumber = m)
-  }
+  sigmau2 <- wrapper_estsigmau2(framework = framework, method = method,
+                                precision = precision, maxiter = maxiter,
+                                interval = interval)
 
-  # Estimation of the regression coefficients
-  # Identity matrix mxm
-  D <- diag(1, m)
-  # Total variance-covariance matrix - only values on the diagonal due to
-  # independence of error terms
-  V <- sigmau2 * D%*%t(D) + diag(as.numeric(vardir))
-  # Inverse of the total variance
-  Vi <- solve(V)
-  # Inverse of X'ViX
-  Q <- solve(t(model_X)%*%Vi%*%model_X)
-  # Beta by (X'ViX)^-1 X'Viy
-  Beta.hat <- Q%*%t(model_X)%*%Vi%*%direct
 
-  # Inference for coefficients
-  std.errorbeta <- sqrt(diag(Q))
-  tvalue <- Beta.hat/std.errorbeta
-  pvalue <- 2 * pnorm(abs(tvalue), lower.tail = FALSE)
-
-  Coefficients <- data.frame(Coefficients = Beta.hat,
-                             Std.Error = std.errorbeta,
-                             t.value = tvalue,
-                             p.value = pvalue)
-
-  # Computation of the EBLUP
-  real_res <- direct - c(model_X%*%Beta.hat)
-  sigmau2Diag <- sigmau2*D
-  u.hat <- sigmau2Diag%*%t(D)%*%Vi%*%real_res
-
-  # Computation of shrinkage factor
-  gamma <- sigmau2 / (sigmau2 + vardir)
-
-  # Small area mean
-  if (is.null(back_transformation)) {
-    EBLUP <- model_X%*%Beta.hat + D%*%u.hat
-  } else if (back_transformation == "naive") {
-    EBLUP <- exp(model_X%*%Beta.hat + D%*%u.hat)
-  } else if (back_transformation == "SM") {
-    EBLUP <- exp(model_X%*%Beta.hat + D%*%u.hat + (0.5 * sigmau2 * (1 - gamma)))
-  } else if (back_transformation == "BC2") {
-    Deriv1 <- solve((sigmau2 * D) + diag(c(vardir), m))
-    ### Inverse of fisher information matrix. That is var. sigma2u
-    II <- ((1/2) * sum(diag(Deriv1%*%Deriv1)))^(-1)
-
-    A <- NULL
-    for (i in 1:m) {
-      A[i] <- ((1 - gamma[i])^2) * (matrix(model_X[i,],
-                                            nrow = 1)%*%Q%*%matrix(model_X[i,], ncol = 1))
-    }
-    tau <- sigmau2 + vardir
-    B1 <- (((1 - gamma)/tau) * ((direct - c(model_X%*%Beta.hat))) + (0.5 * ((1 - gamma)^2)))^2
-    B2 <- (((2 - 2 * gamma)/(tau^2)) * (direct - c(model_X%*%Beta.hat))) + (((1 - gamma)^2)/tau)
-    c1 <- exp(0.5 * (A + B1 * II))
-    c2 <- exp(0.5 * (A + (B1 - B2) * II))
-
-    EBLUP <- exp(model_X%*%Beta.hat + D%*%u.hat + (0.5 * sigmau2 * (1 - gamma)))/c2
-  }
-
+  # Standard EBLUP
+  eblup <- eblup_FH(framework = framework, sigmau2 = sigmau2,
+                    combined_data = combined_data)
 
 
   # Criteria for model selection
-  loglike <- (-0.5) * (sum(log(2 * pi * (sigmau2 + vardir)) +
-                             (real_res^2)/(sigmau2 + vardir)))
-  AIC <- (-2) * loglike + 2 * (p + 1)
-  BIC <- (-2) * loglike + (p + 1) * log(m)
+  criteria <- model_select(framework = framework, sigmau2 = sigmau2,
+                           real_res = eblup$real_res)
 
-  # Calculation R2
-  P <- model_X%*%solve(t(model_X)%*%model_X)%*%t(model_X)
-  SSE <- as.numeric(t(direct)%*%(diag(1,length(direct))-P)%*%direct)
-  m <- nrow(model_X)
-  p <- ncol(model_X)
-  MSE <- SSE/(m-p)
-  one <- matrix(1,m,1)
-  SST <- as.numeric(t(direct)%*%(diag(1,length(direct))-(1/m)*one%*%t(one))%*%direct)
-  MST <- SST/(m - 1)
-  R2_regular <- 1-(MSE/MST)
 
-  barD <- sum(vardir)/m
-  hii <- NULL
-  for (i in 1:m)
-  {
-    hii[i] <- as.numeric(t(model_X[i,])%*%solve(t(model_X)%*%model_X)%*%model_X[i,])
-  }
-  Dw <- sum((1 - hii) * vardir)/(m - p)
-  hxbMSE <- (2 * MSE)/(1 + exp((2 * Dw)/MSE))
-  hxbMST <- (2 * MST)/(1 + exp((2 * barD)/MST))
-  AdjR2 <- 1 - (hxbMSE/hxbMST)
+  if (transformation == "no") {
 
-  criteria <- data.frame(loglike = loglike,
-                         AIC = AIC,
-                         BIC = BIC,
-                         R2 = R2_regular,
-                         AdjR2 = AdjR2)
+    # Analytical MSE
+    MSE_data <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                               combined_data = combined_data,
+                               method = method)
 
-  # Analytical MSE
-  # Preparation of matrices to save MSE components
-  if (is.null(back_transformation)) {
-    g1 <- rep(0, m)
-    g2 <- rep(0, m)
-    g3 <- rep(0, m)
-    mse <- rep(0, m)
-    # Inverse of total variance
-    Vi <- 1/(sigmau2 + vardir)
+
     # Shrinkage factor
-    Bd <- vardir/(sigmau2 + vardir)
-    # Squared inverse of total variance
-    SumAD2 <- sum(Vi^2)
-    # X'Vi
-    XtVi <- t(Vi * model_X)
-    # (X'ViX)^-1
-    Q <- solve(XtVi %*% model_X)
+    Gamma <- data.frame(Domain = framework$data[[framework$domains]],
+                        Gamma = eblup$gamma)
 
-    # 2 divided by squared inverse of total variance
-    VarA <- 2/SumAD2
-    for (d in 1:m) {
-      # Variance due to random effects: vardir * gamma
-      g1[d] <- vardir[d] * (1 - Bd[d])
-      # Covariate for single domain
-      xd <- matrix(model_X[d, ], nrow = 1, ncol = p)
-      # Variance due to the estimation of beta
-      g2[d] <- (Bd[d]^2) * xd %*% Q %*% t(xd)
-      # Variance due to the estimation of the variance of the random effects
-      g3[d] <- (Bd[d]^2) * VarA/(sigmau2 + vardir[d])
-      # Prasad-Rao estimator
-      mse[d] <- g1[d] + g2[d] + 2 * g3[d]
-    }
+    out <- list(ind = eblup$EBLUP_data,
+                MSE = MSE_data$MSE_data,
+                method = method,
+                MSE_method = MSE_data$MSE_method,
+                transformation = transformation,
+                coefficients = eblup$coefficients,
+                sigmau2 = sigmau2,
+                random_effects = eblup$random_effects,
+                real_residuals = eblup$real_res,
+                gamma = Gamma,
+                model_select = criteria)
+  } else if (transformation != "no") {
 
-    if (method == "AMPL" | method == "AMRL") {
-      areanumber <- m
-      x <- model_X
-      psi <- matrix(c(vardir), areanumber, 1)
-      Y <- matrix(c(direct), areanumber, 1)
-      X <- x
-      Z.area <- diag(1, areanumber)
-      sigma.u_log <- sigmau2
-      I <- diag(1, areanumber)
-      #V is the variance covariance matrix
-      V <- sigma.u_log * Z.area%*%t(Z.area) + I * psi[,1]
-      Vi <- solve(V)
-      Xt <- t(X)
-      XVi <- Xt%*%Vi
-      Q <- solve(XVi%*%X)
-      P <- Vi - (Vi%*%X%*%Q%*%XVi)
-      b.s <- Q%*%XVi%*%Y
+    # Shrinkage factor
+    Gamma <- data.frame(Domain = framework$data[[framework$domains]],
+                        Gamma = eblup$gamma)
 
-      if (method == "AMPL") {
-        Bias <- (sum(diag(P - Vi)) + (2/sigmau2)) / sum(diag(Vi^2))
-        for (d in 1:m) {
-          # Adjusted mse
-          mse[d] <- mse[d] - (Bd[d]^2) * Bias
-        }
-      } else if (method == "AMRL") {
-        Bias <- (2/sigmau2) / sum(diag(Vi^2))
-        for (d in 1:m) {
-          # Adjusted mse
-          mse[d] <- mse[d] - (Bd[d]^2) * Bias
-        }
-      }
-    }
+    # Back-transformation
+    result_data <- backtransformed(framework = framework,
+                                   sigmau2 = sigmau2, eblup = eblup,
+                                   transformation = transformation,
+                                   combined_data = combined_data,
+                                   method = method)
 
-    EBLUP_data <- data.frame(Domain = data[[domains]],
-                             Direct = direct,
-                             EBLUP = as.numeric(EBLUP))
-
-    MSE_data <- data.frame(Domain = data[[domains]],
-                           Var = vardir,
-                           MSE = mse,
-                           G1 = g1,
-                           G2 = g2,
-                           G3 = g3)
-
-  } else if (back_transformation == "SM" | back_transformation == "BC2") {
-    # MSE estimation
-    nu <- model_X%*%Beta.hat
-    tau <- sigmau2 + vardir
-    # Variance of beta
-    Var.beta <- Q
-    # Variance of sigmau2
-    Deriv1 <- solve((sigmau2 * D) + diag(c(vardir), m))
-    ### Inverse of fisher information matrix. That is var. sigma2u
-    Var.sigma <- ((1/2) * sum(diag(Deriv1%*%Deriv1)))^(-1)
-
-    tmp <- NULL
-    for (i in 1:m) {
-      tmp[i] <- (t(model_X)[,i]%*%Q%*%model_X[i,])/(tau[i]^2)
-    }
-
-    mse <- NULL
-    for (j in 1:m) {
-      mse[j] <- exp(2 * (nu[j,1] + sigmau2)) * (1 - exp(-gamma[j] * vardir[j])) +
-        ((vardir[j]^2)/tau[j]^2) * exp(2 * nu[j,1] + sigmau2 * (1 + gamma[j])) * (t(model_X)[,j]%*%Q%*%model_X[j,]) +
-        Var.sigma * ((vardir[j]^2)/tau[j]^2) * exp(2 * nu[j,1] + sigmau2 * (1 + gamma[j])) *
-        ((1/4) * (1 + 3 * gamma[j])^2 + (1/tau[j])) - exp(2 * (nu[j,1] + sigmau2)) *
-        (2 * (1 - exp(-gamma[j] * vardir[j])) * (t(model_X)[,j]%*%Q%*%model_X[j,]) - Var.sigma *
-           (2 + (((vardir[j]^2)/tau[j]^2) - 2) * exp(-gamma[j] * vardir[j])) * sum(tmp) +
-           Var.sigma * (2 + (((2 * (vardir[j]^2))/(tau[j]^2)) - 2) * exp(-gamma[j] * vardir[j]) -
-           ((vardir[j]^2)/(tau[j]^3)) * exp(-gamma[j] * vardir[j]) * (1 + ((vardir[j]^2)/(2 * tau[j])))))
-    }
-
-    if (back_transformation == "BC2") {
-      mse <- mse / (c2^2)
-    }
-
-    EBLUP_data <- data.frame(Domain = data[[domains]],
-                             Direct = exp(direct),
-                             EBLUP = as.numeric(EBLUP))
-
-    MSE_data <- data.frame(Domain = data[[domains]],
-                           Var = vardir,
-                           MSE = mse
-                           #G1 = g1,
-                           #G2 = g2,
-                           #G3 = g3
-    )
-
-  } else if (back_transformation == "naive") {
-  g1 <- rep(0, m)
-  g2 <- rep(0, m)
-  g3 <- rep(0, m)
-  mse <- rep(0, m)
-  # Inverse of total variance
-  Vi <- 1/(sigmau2 + vardir)
-  # Shrinkage factor
-  Bd <- vardir/(sigmau2 + vardir)
-  # Squared inverse of total variance
-  SumAD2 <- sum(Vi^2)
-  # X'Vi
-  XtVi <- t(Vi * model_X)
-  # (X'ViX)^-1
-  Q <- solve(XtVi %*% model_X)
-
-  # 2 divided by squared inverse of total variance
-  VarA <- 2/SumAD2
-  for (d in 1:m) {
-    # Variance due to random effects: vardir * gamma
-    g1[d] <- vardir[d] * (1 - Bd[d])
-    # Covariate for single domain
-    xd <- matrix(model_X[d, ], nrow = 1, ncol = p)
-    # Variance due to the estimation of beta
-    g2[d] <- (Bd[d]^2) * xd %*% Q %*% t(xd)
-    # Variance due to the estimation of the variance of the random effects
-    g3[d] <- (Bd[d]^2) * VarA/(sigmau2 + vardir[d])
-    # Prasad-Rao estimator
-    mse[d] <- g1[d] + g2[d] + 2 * g3[d]
-  }
-
-    mse <- EBLUP^2 * mse
-
-    EBLUP_data <- data.frame(Domain = data[[domains]],
-                             Direct = exp(direct),
-                             EBLUP = as.numeric(EBLUP))
-
-    MSE_data <- data.frame(Domain = data[[domains]],
-                           Var = vardir,
-                           MSE = mse,
-                           G1 = g1,
-                           G2 = g2,
-                           G3 = g3
-    )
-  }
-
-
-
-  Gamma <- data.frame(Domain = data[[domains]],
-                      Gamma = sigmau2 / (sigmau2 + vardir))
-
-  # Prediction
-  if (all(obs_dom == TRUE)) {
-    EBLUP_pred <- NULL
-  } else {
-    pred_data_tmp <- combined_data[obs_dom == FALSE,]
-
-    pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
-    lhs(formula) <- quote(helper)
-    pred_data <- makeXY(formula = formula, data = pred_data_tmp)
-
-    pred_X <- pred_data$x
-    pred_y <- pred_X %*% Beta.hat
-
-    if (is.null(back_transformation)) {
-      pred_y <- pred_y
-    } else if (back_transformation == "naive") {
-      pred_y <- exp(pred_y)
-    } else if (back_transformation == "SM" | back_transformation == "BC2") {
-      pred_y <- exp(pred_y)
-      cat("Out-of-sample predictions are naively back-transformed by the
-          exponential since the bias-correction cannot be applied for
-          out-of-sample domains.")
-    }
-
-    EBLUP_pred <- data.frame(Domain = combined_data[[domains]])
-    EBLUP_pred$Pred_FH[obs_dom == TRUE] <- EBLUP
-    EBLUP_pred$Pred_FH[obs_dom == FALSE] <- pred_y
-    EBLUP_pred$Ind[obs_dom == TRUE] <- 0
-    EBLUP_pred$Ind[obs_dom == FALSE] <- 1
-
+    out <- list(ind = result_data$EBLUP_data,
+                MSE = result_data$MSE_data,
+                method = method,
+                MSE_method = NULL,
+                transformation = transformation,
+                coefficients = eblup$coefficients,
+                sigmau2 = sigmau2,
+                random_effects = eblup$random_effects,
+                real_residuals = eblup$real_res,
+                gamma = Gamma,
+                model_select = criteria)
 
   }
 
-
-
-  # Return
-  out <- list(ind = EBLUP_data,
-              MSE = MSE_data,
-              ind_pred = EBLUP_pred,
-              Coefficients = Coefficients,
-              Sigmau2 = sigmau2,
-              random_effects = u.hat,
-              real_residuals = real_res,
-              gamma = Gamma,
-              model_select = criteria)
-
-  class(out) <- "FH_AK"
+  class(out) <- "FH_eblup"
 
   return(out)
 
