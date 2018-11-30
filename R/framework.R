@@ -1,13 +1,13 @@
-framework_FH <- function(combined_data, formula, vardir, domains,
+framework_FH <- function(combined_data, fixed, vardir, domains,
                          transformation, eff_smpsize) {
   # Get sample and population data
-  obs_dom <- !is.na(combined_data[[paste(lhs(formula))]])
+  obs_dom <- !is.na(combined_data[[paste(lhs(fixed))]])
 
   data <- combined_data[obs_dom == TRUE,]
 
   # Get response variable and model matrix from formula and data
-  direct <- makeXY(formula, data)$y
-  model_X <- makeXY(formula, data)$x
+  direct <- makeXY(fixed, data)$y
+  model_X <- makeXY(fixed, data)$x
   vardir <- data[, vardir]
   direct_orig <- NULL
   vardir_orig <- NULL
@@ -35,13 +35,13 @@ framework_FH <- function(combined_data, formula, vardir, domains,
 
   # Number of areas
   m <- length(direct)
-  M <- length(combined_data[[paste(lhs(formula))]])
+  M <- length(combined_data[[paste(lhs(fixed))]])
   # Number of covariates
   p <- ncol(model_X)
 
   framework_out <- list(obs_dom = obs_dom,
                         data = data,
-                        formula = formula,
+                        formula = fixed,
                         direct = direct,
                         direct_orig = direct_orig,
                         model_X = model_X,

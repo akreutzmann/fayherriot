@@ -83,8 +83,7 @@ FH_arcsin <- function(formula,vardir,dataframe_sample, saind,dataframe_pop_aux,
     b.s<-Q%*%XVi%*%Y
 
     ee=eigen(V)
-    log(sigma.u_log)-(areanumber_logl/2)*log(2*pi)
-    -0.5*sum(log(ee$value))-(0.5)*log(det(t(X)%*%Vi%*%X))-(0.5)*t(Y)%*%P%*%Y
+    log(sigma.u_log)-(areanumber_logl/2)*log(2*pi)-0.5*sum(log(ee$value))-(0.5)*log(det(t(X)%*%Vi%*%X))-(0.5)*t(Y)%*%P%*%Y
   }
 
   ### AP log-likelihood function

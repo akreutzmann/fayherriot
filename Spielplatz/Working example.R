@@ -36,9 +36,9 @@ combined_data <- combine_data(pop_data = data_pop, pop_domains = "id",
                               smp_data = data_sample, smp_domains = "id",
                               vardir = NULL)
 
-FH_test <- FH_eblup(formula = y ~ x1.y + x2.y, vardir = "vardir",
+FH_test <- fh(fixed = y ~ x1.y + x2.y, vardir = "vardir",
          combined_data = combined_data, domains = "idD",
-         method = "AMPL", interval = c(-5, 100), transformation = "arcsin",
+         method = "ampl", interval = c(0, 100), transformation = "arcsin",
          eff_smpsize = "effsample", alpha = 0.05)
 
 FH_test$sigmau2

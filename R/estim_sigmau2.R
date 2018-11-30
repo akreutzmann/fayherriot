@@ -331,22 +331,22 @@ wrapper_estsigmau2 <- function(framework, method, precision, maxiter, interval) 
   sigmau2 <- if (method == "sae_reml") {
     saeReml(vardir = framework$vardir, precision = precision, maxiter = maxiter,
                        X = framework$model_X, y = framework$direct)
-  } else if (method == "nicola_reml") {
+  } else if (method == "reml") {
     NicolaReml(interval = interval, vardir = framework$vardir, x = framework$model_X,
                           direct = framework$direct, areanumber = framework$m)
-  } else if (method == "AMRL") {
+  } else if (method == "amrl") {
     AMRL(interval = interval, vardir = framework$vardir, x = framework$model_X,
                     direct = framework$direct, areanumber = framework$m)
-  } else if (method == "AMRL_YL") {
+  } else if (method == "amrl_yl") {
     AMRL_YL(interval = interval, vardir = framework$vardir, x = framework$model_X,
          direct = framework$direct, areanumber = framework$m)
-  } else if (method == "AMPL") {
+  } else if (method == "ampl") {
     AMPL(interval = interval, vardir = framework$vardir, x = framework$model_X,
          direct = framework$direct, areanumber = framework$m)
-  } else if (method == "AMPL_YL") {
+  } else if (method == "ampl_yl") {
     AMPL_YL(interval = interval, vardir = framework$vardir, x = framework$model_X,
                     direct = framework$direct, areanumber = framework$m)
-  } else if (method == "ML") {
+  } else if (method == "ml") {
     MPL(interval = interval, vardir = framework$vardir, x = framework$model_X,
          direct = framework$direct, areanumber = framework$m)
   }

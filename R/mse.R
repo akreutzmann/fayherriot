@@ -142,13 +142,13 @@ li_lahiri <- function(framework, sigmau2, combined_data, method) {
     P <- Vi - (Vi%*%X%*%Q%*%XVi)
     b.s <- Q%*%XVi%*%Y
 
-    if (method == "AMPL") {
+    if (method == "ampl") {
       Bias <- (sum(diag(P - Vi)) + (2/sigmau2)) / sum(diag(Vi^2))
       for (d in 1:framework$m) {
         # Adjusted mse
         mse[d] <- mse[d] - (Bd[d]^2) * Bias
       }
-    } else if (method == "AMRL") {
+    } else if (method == "amrl") {
       Bias <- (2/sigmau2) / sum(diag(Vi^2))
       for (d in 1:framework$m) {
         # Adjusted mse
@@ -196,13 +196,13 @@ yoshimori_lahiri <- function(framework, sigmau2, combined_data, method) {
   P <- Vi - (Vi%*%X%*%Q%*%XVi)
   b.s <- Q%*%XVi%*%Y
 
-  if (method == "AMPL_YL") {
+  if (method == "ampl_yl") {
     Bias <- (sum(diag(P - Vi))) / sum(diag(Vi^2))
     for (d in 1:framework$m) {
       # Adjusted mse
       mse[d] <- mse[d] - (Bd[d]^2) * Bias
     }
-  } else if (method == "AMRL_YL") {
+  } else if (method == "amrl_yl") {
       mse <- mse
   }
 
@@ -291,19 +291,19 @@ slud_maiti <- function(framework, sigmau2, eblup, combined_data) {
 analytical_mse <- function(framework, sigmau2, combined_data,
                            method) {
 
-    if (method == "sae_reml" | method == "nicola_reml") {
+    if (method == "sae_reml" | method == "reml") {
       MSE_data <- prasad_rao(framework = framework, sigmau2 = sigmau2,
                              combined_data = combined_data)
       MSE_method <- "Prasad_Rao"
-    } else if (method == "AMRL" | method == "AMPL") {
+    } else if (method == "amrl" | method == "ampl") {
       MSE_data <- li_lahiri(framework = framework, sigmau2, combined_data,
                             method = method)
       MSE_method <- paste0(method, "_corrected")
-    } else if (method == "AMRL_YL" | method == "AMPL_YL") {
+    } else if (method == "amrl_yl" | method == "ampl_yl") {
       MSE_data <- yoshimori_lahiri(framework = framework, sigmau2, combined_data,
                             method = method)
       MSE_method <- paste0(method, "_corrected")
-    } else if (method == "ML") {
+    } else if (method == "ml") {
       MSE_data <- datta_lahiri(framework = framework, sigmau2, combined_data)
       MSE_method <- "Datta_Lahiri"
     }
