@@ -432,3 +432,47 @@ boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
 
     conf_int <- data.frame(Li = Li, Ui = Ui)
 }
+
+jiang_jackknife <- function(framework, combined_data, sigmau2, eblup) {
+
+  M <- framework$M
+  jack_sigmau2 <- vector(length = M)
+  jack_eblups <- data.frame(row.names = 1:M)
+
+  for (domain in 1:M) {
+    print(domain)
+
+    data_tmp <- combined_data[-domain,]
+
+    # Framework with temporary data
+    framework_tmp <- framework_FH(combined_data = data_tmp, fixed = fixed,
+                              vardir = vardir, domains = domains,
+                              transformation = transformation,
+                              eff_smpsize = eff_smpsize)
+    # Estimate sigma u
+    sigmau2_tmp <- wrapper_estsigmau2(framework = framework_tmp, method = method,
+                                  precision = precision, maxiter = maxiter,
+                                  interval = interval)
+    jack_sigmau2[domain] <- sigmau2_tmp
+
+    # Standard EBLUP
+    eblup_tmp <- eblup_FH(framework = framework, sigmau2 = sigmau2_tmp,
+                      combined_data = combined_data)
+    diff_jack_eblups[, paste0(domain)] <- eblup_tmp$EBLUP_data$EBLUP - eblup$EBLUP_data$EBLUP
+  }
+
+  g1 <- rep(0, framework$m)
+  mse <- rep(0, framework$M)
+  # Inverse of total variance
+  Vi <- 1/(sigmau2 + framework$vardir)
+  # Shrinkage factor
+  Bd <- framework$vardir/(sigmau2 + framework$vardir)
+
+
+  for (d in 1:framework$m) {
+    # Variance due to random effects: vardir * gamma
+    g1[d] <- framework$vardir[d] * (1 - Bd[d])
+  }
+
+
+}
