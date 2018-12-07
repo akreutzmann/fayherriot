@@ -1,6 +1,6 @@
 
 backtransformed <- function(framework, sigmau2, eblup, transformation,
-                            combined_data, method,
+                            combined_data, method, vardir,
                             precision, maxiter,
                             interval, alpha) {
 
@@ -83,7 +83,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
     MSE_data$MSE[framework$obs_dom == FALSE] <- NA
 
-    } else if (transformation == "arcsin") {
+    } else if (transformation == "arcsin_boot") {
 
 
       EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
@@ -99,7 +99,27 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                               interval = interval, alpha = alpha)
       MSE_data$Li <- conf_int$Li
       MSE_data$Ui <- conf_int$Ui
-  }
+    } else if (transformation == "arcsin_jack") {
+
+      EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
+
+      EBLUP_data$EBLUP[EBLUP_data$EBLUP < 0] <- 0
+      EBLUP_data$EBLUP[EBLUP_data$EBLUP > (pi / 2)] <- (pi / 2)
+
+      EBLUP_data$EBLUP <- (sin(EBLUP_data$EBLUP))^2
+
+      jack_mse <- jiang_jackknife(framework = framework,
+                                  combined_data = combined_data, sigmau2 = sigmau2,
+                                  vardir = vardir, eblup = eblup, transformation = transformation,
+                                  method = method, interval = interval)
+
+
+      back_jack_mse <- 2 * sin(eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]) * cos(eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]) * jack_mse$MSE_data$MSE[jack_mse$MSE_data$ind == 0]
+
+      MSE_data$MSE[framework$obs_dom == TRUE] <- back_jack_mse
+      #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+      MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    }
 
   EBLUP_data$ind[framework$obs_dom == TRUE] <- 0
   EBLUP_data$ind[framework$obs_dom == FALSE] <- 1

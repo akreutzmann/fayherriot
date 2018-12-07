@@ -19,7 +19,7 @@ framework_FH <- function(combined_data, fixed, vardir, domains,
     vardir_orig <- vardir
     vardir <- (1 / direct)^2 * vardir
     direct <- log(direct)
-  } else if (transformation == "arcsin") {
+  } else if (transformation == "arcsin_jack" | transformation == "arcsin_boot") {
     direct_orig <- direct
     vardir_orig <- vardir
     direct <- asin(sqrt(direct))

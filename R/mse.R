@@ -433,15 +433,18 @@ boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
     conf_int <- data.frame(Li = Li, Ui = Ui)
 }
 
-jiang_jackknife <- function(framework, combined_data, sigmau2, eblup) {
+jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transformation,
+                            vardir, method, interval) {
 
-  m <- framework$M
+
+
+  m <- framework$m
   jack_sigmau2 <- vector(length = m)
   diff_jack_eblups <- data.frame(row.names = 1:m)
   diff_jack_g1 <- data.frame(row.names = 1:m)
 
   g1 <- rep(0, framework$m)
-  mse <- rep(0, framework$M)
+  jack_mse <- rep(0, framework$m)
   # Inverse of total variance
   Vi <- 1/(sigmau2 + framework$vardir)
   # Shrinkage factor
@@ -456,38 +459,64 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup) {
   for (domain in 1:m) {
     print(domain)
 
-    data_tmp <- combined_data[-domain,]
+
+    data_insample <- combined_data[framework$obs_dom,]
+    data_tmp <- data_insample[-domain,]
 
     # Framework with temporary data
-    framework_tmp <- framework_FH(combined_data = data_tmp, fixed = fixed,
-                              vardir = vardir, domains = domains,
+    framework_tmp <- framework_FH(combined_data = data_tmp, fixed = framework$formula,
+                              vardir = vardir, domains = framework$domains,
                               transformation = transformation,
-                              eff_smpsize = eff_smpsize)
+                              eff_smpsize = framework$eff_smpsize)
     # Estimate sigma u
     sigmau2_tmp <- wrapper_estsigmau2(framework = framework_tmp, method = method,
-                                  precision = precision, maxiter = maxiter,
                                   interval = interval)
     jack_sigmau2[domain] <- sigmau2_tmp
 
-    Vi_tmp <- 1/(sigmau2_tmp + framework_tmp$vardir)
+    Vi_tmp <- 1/(sigmau2_tmp + framework$vardir)
     # Shrinkage factor
-    Bd_tmp <- framework_tmp$vardir/(sigmau2_tmp + framework_tmp$vardir)
+    Bd_tmp <- framework$vardir/(sigmau2_tmp + framework$vardir)
 
-    g1_tmp <- rep(0, framework_tmp$m)
-    for (d_tmp in 1:framework_tmp$m) {
-      g1_tmp[d_tmp] <- framework_tmp$vardir[d_tmp] * (1 - Bd_tmp[d_tmp])
+    g1_tmp <- rep(0, framework$m)
+    for (d_tmp in 1:framework$m) {
+      g1_tmp[d_tmp] <- framework$vardir[d_tmp] * (1 - Bd_tmp[d_tmp])
     }
 
     # G1
     diff_jack_g1[, paste0(domain)] <- g1_tmp - g1
 
     # Standard EBLUP
-    eblup_tmp <- eblup_FH(framework = framework, sigmau2 = sigmau2_tmp,
-                      combined_data = combined_data)
-    diff_jack_eblups[, paste0(domain)] <- eblup_tmp$EBLUP_data$EBLUP - eblup$EBLUP_data$EBLUP
+    framework_insample <- framework_FH(combined_data = data_insample, fixed = framework$formula,
+                                       vardir = vardir, domains = framework$domains,
+                                       transformation = transformation,
+                                       eff_smpsize = framework$eff_smpsize)
+    eblup_tmp <- eblup_FH(framework = framework_insample, sigmau2 = sigmau2_tmp,
+                      combined_data = data_insample)
+    diff_jack_eblups[, paste0(domain)] <- eblup_tmp$EBLUP_data$EBLUP - eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]
   }
 
+  jack_mse <- g1 - ((m - 1)/m) * rowSums(diff_jack_g1) + ((m - 1)/m) * rowSums(diff_jack_eblups^2)
 
 
+  MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
+  MSE_data$Var <- NA
+  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
 
+  # Jackknife MSE
+  MSE_data$MSE[framework$obs_dom == TRUE] <- jack_mse
+  MSE_data$ind[framework$obs_dom == TRUE] <- 0
+
+
+  if (!all(framework$obs_dom == TRUE)) {
+    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_data$ind[framework$obs_dom == FALSE] <- 1
+
+    cat("Please note that the jackknife MSE is only available for in-sample
+        domains.")
+  }
+
+  mse_out <- list(MSE_data = MSE_data,
+                  MSE_method = "jackknife")
+
+  return(mse_out)
 }

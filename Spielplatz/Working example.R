@@ -38,12 +38,37 @@ combined_data <- combine_data(pop_data = data_pop, pop_domains = "id",
 
 FH_test <- fh(fixed = y ~ x1.y + x2.y, vardir = "vardir",
          combined_data = combined_data, domains = "idD",
-         method = "ampl", interval = c(0, 100), transformation = "arcsin",
+         method = "reml", interval = c(0, 100), transformation = "no",
          eff_smpsize = "effsample", alpha = 0.05)
 
 FH_test$sigmau2
-FH_test$MSE$Li
-FH_test$MSE$Ui
+FH_test$MSE$MSE[FH_test$MSE$ind == 0]
+
+
+FH_test2 <- fh(fixed = y ~ x1.y + x2.y, vardir = "vardir",
+              combined_data = combined_data, domains = "idD",
+              method = "reml", interval = c(0, 100), transformation = "arcsin_jack",
+              eff_smpsize = "effsample", alpha = 0.05)
+
+FH_test2$sigmau2
+FH_test2$MSE$MSE[FH_test2$MSE$ind == 0]
+
+FH_test3 <- fh(fixed = y ~ x1.y + x2.y, vardir = "vardir",
+               combined_data = combined_data, domains = "idD",
+               method = "reml", interval = c(0, 100), transformation = "arcsin_boot",
+               eff_smpsize = "effsample", alpha = 0.05)
+
+FH_test3$sigmau2
+FH_test3$MSE$Li
+FH_test3$MSE$Ui
+
+FH_test2$ind$EBLUP[FH_test2$ind$ind == 0] + 1.96 * FH_test2$MSE$MSE[FH_test2$MSE$ind == 0]
+FH_test3$MSE$Ui[FH_test3$MSE$ind == 0]
+
+FH_test2$ind$EBLUP[FH_test2$ind$ind == 0] - 1.96 * FH_test2$MSE$MSE[FH_test2$MSE$ind == 0]
+FH_test3$MSE$Li[FH_test3$MSE$ind == 0]
+
+
 
 all.equal(fit$est_mean_FH$pred, FH_test$ind$EBLUP)
 all.equal(fit$CI_FH$Low, FH_test$MSE$Li)

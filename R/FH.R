@@ -25,6 +25,8 @@
 #' (vii) adjusted ML following \cite{Yoshimori and Lahiri (2014)}
 #' ("\code{ampl_yl}").
 #'  Defaults to "\code{reml}".
+#' @param MSE a character string determining the estimation of the MSE estimates.
+#' Analytical or jackknife MSEs can be chosen.
 #' @param interval interval for the estimation of sigmau2.
 #' @param precision precision criteria for the estimation of sigmau2.
 #' @param maxiter maximum of iterations for the estimation of sigmau2.
@@ -38,7 +40,8 @@
 
 
 fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
-                     transformation = "no", eff_smpsize = NULL, interval = c(0, 1000),
+                     MSE = "analytical", transformation = "no", eff_smpsize = NULL,
+                     interval = c(0, 1000),
                      precision = 0.0001, maxiter = 100, alpha = alpha) {
 
 
@@ -68,9 +71,17 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
   if (transformation == "no") {
 
     # Analytical MSE
-    MSE_data <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                               combined_data = combined_data,
-                               method = method)
+    if (MSE == "analytical") {
+      MSE_data <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                                 combined_data = combined_data,
+                                 method = method)
+    } else if (MSE == "jackknife") {
+      MSE_data <- jiang_jackknife(framework = framework,
+                                  combined_data = combined_data, sigmau2 = sigmau2,
+                                  vardir = vardir, eblup = eblup, transformation = transformation,
+                                  method = method, interval = interval)
+    }
+
 
 
     # Shrinkage factor

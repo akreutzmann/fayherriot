@@ -5,8 +5,9 @@
 \title{Function for Fay-Herriot model}
 \usage{
 fh(fixed, vardir, combined_data, domains = NULL, method = "reml",
-  transformation = "no", eff_smpsize = NULL, interval = c(0, 1000),
-  precision = 1e-04, maxiter = 100, alpha = alpha)
+  MSE = "analytical", transformation = "no", eff_smpsize = NULL,
+  interval = c(0, 1000), precision = 1e-04, maxiter = 100,
+  alpha = alpha)
 }
 \arguments{
 \item{fixed}{a two-sided linear formula object describing the
@@ -36,6 +37,9 @@ the variance of the random effects. Methods that can be chosen
 (vii) adjusted ML following \cite{Yoshimori and Lahiri (2014)}
 ("\code{ampl_yl}").
  Defaults to "\code{reml}".}
+
+\item{MSE}{a character string determining the estimation of the MSE estimates.
+Analytical or jackknife MSEs can be chosen.}
 
 \item{transformation}{choses type of transformation and back-transformation.}
 
