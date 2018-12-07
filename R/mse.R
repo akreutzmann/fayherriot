@@ -435,11 +435,25 @@ boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
 
 jiang_jackknife <- function(framework, combined_data, sigmau2, eblup) {
 
-  M <- framework$M
-  jack_sigmau2 <- vector(length = M)
-  jack_eblups <- data.frame(row.names = 1:M)
+  m <- framework$M
+  jack_sigmau2 <- vector(length = m)
+  diff_jack_eblups <- data.frame(row.names = 1:m)
+  diff_jack_g1 <- data.frame(row.names = 1:m)
 
-  for (domain in 1:M) {
+  g1 <- rep(0, framework$m)
+  mse <- rep(0, framework$M)
+  # Inverse of total variance
+  Vi <- 1/(sigmau2 + framework$vardir)
+  # Shrinkage factor
+  Bd <- framework$vardir/(sigmau2 + framework$vardir)
+
+
+  for (d in 1:framework$m) {
+    # Variance due to random effects: vardir * gamma
+    g1[d] <- framework$vardir[d] * (1 - Bd[d])
+  }
+
+  for (domain in 1:m) {
     print(domain)
 
     data_tmp <- combined_data[-domain,]
@@ -455,24 +469,25 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup) {
                                   interval = interval)
     jack_sigmau2[domain] <- sigmau2_tmp
 
+    Vi_tmp <- 1/(sigmau2_tmp + framework_tmp$vardir)
+    # Shrinkage factor
+    Bd_tmp <- framework_tmp$vardir/(sigmau2_tmp + framework_tmp$vardir)
+
+    g1_tmp <- rep(0, framework_tmp$m)
+    for (d_tmp in 1:framework_tmp$m) {
+      g1_tmp[d_tmp] <- framework_tmp$vardir[d_tmp] * (1 - Bd_tmp[d_tmp])
+    }
+
+    # G1
+    diff_jack_g1[, paste0(domain)] <- g1_tmp - g1
+
     # Standard EBLUP
     eblup_tmp <- eblup_FH(framework = framework, sigmau2 = sigmau2_tmp,
                       combined_data = combined_data)
     diff_jack_eblups[, paste0(domain)] <- eblup_tmp$EBLUP_data$EBLUP - eblup$EBLUP_data$EBLUP
   }
 
-  g1 <- rep(0, framework$m)
-  mse <- rep(0, framework$M)
-  # Inverse of total variance
-  Vi <- 1/(sigmau2 + framework$vardir)
-  # Shrinkage factor
-  Bd <- framework$vardir/(sigmau2 + framework$vardir)
 
-
-  for (d in 1:framework$m) {
-    # Variance due to random effects: vardir * gamma
-    g1[d] <- framework$vardir[d] * (1 - Bd[d])
-  }
 
 
 }
