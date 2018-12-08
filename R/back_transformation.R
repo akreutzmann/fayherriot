@@ -20,11 +20,34 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
 
     EBLUP_data$EBLUP <- exp(eblup$EBLUP_data$EBLUP + 0.5 * estim_MSE$MSE_data$MSE)
     MSE_data$MSE <- exp(eblup$EBLUP_data$EBLUP)^2 * estim_MSE$MSE_data$MSE
+    MSE_method <- estim_MSE$MSE_method
+
   } else if (transformation == "log_SM") {
 
     estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
                              combined_data = combined_data,
                              method = method)
+
+
+    #D <- diag(1, framework$m)
+    #mu_dri <- eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0] - D%*%eblup$random_effects
+    #mu_dri <- mu_dri[, 1]
+    #Var_dri <- eblup$gamma * sigmau2
+
+    #integrand <- function(x, mean, sd){exp(x) * dnorm(x, mean = mean, sd = sd)}
+    #integrate(Vectorize(integrand),
+    #          lower = -Inf, upper = Inf,
+    #          mean = mu_dri,
+    #          sd = sqrt(Var_dri))$value
+
+    #int_value <- NULL
+    #for (i in 1:framework$m) {
+    #  int_value <- c(int_value, integrate(integrand,
+    #                                      lower = -Inf, upper = Inf,
+    #                                      mean = mu_dri[i],
+    #                                      sd = sqrt(Var_dri[i]))$value)
+    #}
+    #exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == TRUE]) * int_value
 
     EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))
     #EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
@@ -36,6 +59,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE]
     # MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
     MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_method <- "Slud_Maiti"
     } else if (transformation == "log_BC2") {
 
     estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
@@ -82,6 +106,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     MSE_data$MSE[framework$obs_dom == TRUE] <- SM_MSE$MSE[framework$obs_dom == TRUE] / (c2^2)
     #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
     MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_method <- "Chandra_B2"
 
     } else if (transformation == "arcsin_boot") {
 
@@ -99,14 +124,34 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                               interval = interval, alpha = alpha)
       MSE_data$Li <- conf_int$Li
       MSE_data$Ui <- conf_int$Ui
+      MSE_method <- "boot"
     } else if (transformation == "arcsin_jack") {
 
       EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
+
+      #D <- diag(1, framework$m)
+      #mu_dri <- EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0] - D%*%eblup$random_effects
+      #mu_dri <- mu_dri[, 1]
+      #Var_dri <- eblup$gamma * sigmau2
+
+      #integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mean, sd = sd)}
+      #int_value <- NULL
+      #for (i in 1:framework$m) {
+      #  int_value <- c(int_value, integrate(integrand,
+      #                                      lower = 0, upper = pi/2,
+      #                                      mean = mu_dri[i],
+      #                                      sd = sqrt(Var_dri[i]))$value)
+      #}
+
+      #EBLUP_data$EBLUP_corr[eblup$EBLUP_data$ind == 0] <- int_value * (sin(EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]))^2
+      #EBLUP_data$EBLUP_corr[eblup$EBLUP_data$ind == 1] <- NA
+
 
       EBLUP_data$EBLUP[EBLUP_data$EBLUP < 0] <- 0
       EBLUP_data$EBLUP[EBLUP_data$EBLUP > (pi / 2)] <- (pi / 2)
 
       EBLUP_data$EBLUP <- (sin(EBLUP_data$EBLUP))^2
+
 
       jack_mse <- jiang_jackknife(framework = framework,
                                   combined_data = combined_data, sigmau2 = sigmau2,
@@ -119,6 +164,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       MSE_data$MSE[framework$obs_dom == TRUE] <- back_jack_mse
       #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
       MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+      MSE_method <- "jackknife"
     }
 
   EBLUP_data$ind[framework$obs_dom == TRUE] <- 0
@@ -129,7 +175,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
 
 
   back_out <- list(EBLUP_data = EBLUP_data,
-                   MSE_data = MSE_data)
+                   MSE_data = MSE_data, MSE_method = MSE_method)
 
   return(back_out)
   }

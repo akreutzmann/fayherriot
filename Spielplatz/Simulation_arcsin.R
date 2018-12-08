@@ -14,23 +14,23 @@ library(fayherriot)
 set.seed(-22123)
 
 # Number of simulation runs
-NoSim <- 50
+NoSim <- 100
 
 # number of areas
 #m = 15
 #m = 45
-m <- 100
+m <- 50
 
 
 # Set sigma_u to 1 (for both variance patterns)
-sigma.u.sim <- 0.004
+sigma.u.sim <- 0.003
 
 # Implement sigma_e for variance patterns a) and b)
 #vardir  <- as.vector(rep(0, m))
 #vardir <- ((0.00768 * (1:m - 1)) / (m - 1)) + 0.001
 
 
-eff_smpsize <- ((150 * (1:m - 1)) / (m - 1)) + 10
+eff_smpsize <- ((150 * (1:m - 1)) / (m - 1)) + 15
 vardir <- 1/ (4 * eff_smpsize)
 
 # pattern a)
@@ -98,6 +98,7 @@ Ui.arcsinBoot <- array(c(rep(NA, NoSim * m)), dim = c(NoSim, m))
 sigmau2.arcsinJack <- array(c(rep(NA, NoSim * m)), dim = c(NoSim, m))
 gamma.arcsinJack <- array(c(rep(NA, NoSim * m)), dim = c(NoSim, m))
 EBLUP.arcsinJack <- array(c(rep(NA, NoSim * m)), dim = c(NoSim, m))
+EBLUP_corr.arcsinJack <- array(c(rep(NA, NoSim * m)), dim = c(NoSim, m))
 MSE.arcsinJack <- array(c(rep(NA, NoSim * m)), dim = c(NoSim, m))
 
 
@@ -122,6 +123,8 @@ beta <- c(0.001, 1)
 below_zero <- NULL
 above_one <- NULL
 
+test_e <- list()
+test_u <- list()
 # Simulation (10000 runs)
 
 for (h in 1:NoSim) {
@@ -129,19 +132,27 @@ for (h in 1:NoSim) {
   cat(date(),"Iteration number",h,"starting","\n",fill = T)
 
   #Xpop <- matrix(1, m, 1) # auxiliary variable (m * 1)
-  Xpop <- matrix(c(rep(1, m), ((1:m) / (2 * m)) + 0.25), nrow = m, ncol = 2)
+  Xpop <- matrix(c(rep(1, m), ((1:m) / (2 * m)) + 0.35), nrow = m, ncol = 2)
   # random effects randomly drawn from a normal distribution
   u <- matrix(rnorm(m, 0, sqrt(sigma.u.sim)), m, 1)
   # sampling errors randomly drawn from a normal distribution
   e <- rnorm(m, 0, sqrt(vardir))
 
+  test_u[[h]] <- u
+  test_e[[h]] <- e
+
   theta <- Xpop%*%beta + u # true means
+  below_zero <- c(below_zero, any(theta < 0))
+  above_one <- c(above_one, any(theta > 1))
+  theta[, 1][theta[, 1] < 0] <- 0
+  theta[, 1][theta[, 1] > 1] <- 1
   True.ratio[h,] <- theta
   yi <- theta  + e # direct estimates
+  below_zero <- c(below_zero, any(yi < 0))
+  above_one <- c(above_one, any(yi > 1))
+  yi[, 1][yi[, 1] < 0] <- 0
+  yi[, 1][yi[, 1] > 1] <- 1
   True.gamma[h,] <- vardir / (sigma.u.sim + vardir) # true gammas
-
-  below_zero <- c(below_zero, any(theta < 0), any(yi < 0))
-  above_one <- c(above_one, any(theta > 1), any(yi > 1))
 
 
   dom <- as.vector(1:m) # domain indicator for population
@@ -178,6 +189,7 @@ for (h in 1:NoSim) {
   sigmau2.arcsinJack[h,] = Jack$sigmau2
   gamma.arcsinJack[h,] <- vardir / (sigmau2.arcsinJack[h,] + vardir)
   EBLUP.arcsinJack[h,] <- Jack$ind$EBLUP
+  #EBLUP_corr.arcsinJack[h,] <- Jack$ind$EBLUP_corr
   MSE.arcsinJack[h,]		<- Jack$MSE$MSE
 
 }
@@ -230,7 +242,6 @@ summary(quality_gammaJack$RB * 100)
 quality_arcsinBoot <- QualityMeasure(True.mean = t(True.ratio), Est.mean = t(EBLUP.arcsinBoot),
                                MSE = t(MSE.REML), MSETF = FALSE)
 summary(quality_arcsinBoot$RB * 100)
-summary(quality_arcsinBoot$RB_RMSE * 100)
 
 quality_arcsinJack <- QualityMeasure(True.mean = t(True.ratio), Est.mean = t(EBLUP.arcsinJack),
                               MSE = t(MSE.arcsinJack), MSETF = TRUE)

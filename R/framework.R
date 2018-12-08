@@ -26,8 +26,6 @@ framework_FH <- function(combined_data, fixed, vardir, domains,
     vardir <-  1/ (4 * data[, eff_smpsize])
   }
 
-
-
   if (is.null(domains)) {
     data$domains <- 1:length(direct)
     domains <- "domains"

@@ -44,6 +44,19 @@ FH_test <- fh(fixed = y ~ x1.y + x2.y, vardir = "vardir",
 FH_test$sigmau2
 FH_test$MSE$MSE[FH_test$MSE$ind == 0]
 
+fixed = y ~ x1.y + x2.y
+fixed <- log.yi ~ Xpop
+vardir = "vardir"
+vardir = "sd2"
+combined_data = combined_data
+combined_data <- data_comb
+domains = "idD"
+method = "reml"
+interval = c(0, 100)
+transformation = "log_SM"
+eff_smpsize = "effsample"
+alpha = 0.05
+
 
 FH_test2 <- fh(fixed = y ~ x1.y + x2.y, vardir = "vardir",
               combined_data = combined_data, domains = "idD",
@@ -79,3 +92,47 @@ fit$CI_FH
 
 # Benchmarked small area point estimates
 fit$est_mean_FH_bench
+
+
+################################################################################
+
+data("eusilcA_popAgg")
+data("eusilcA_smpAgg")
+
+combined_data <- combine_data(pop_data = eusilcA_popAgg, pop_domains = "Domain",
+                              smp_data = eusilcA_smpAgg, smp_domains = "Domain")
+
+FH_test <- fh(fixed = Mean ~ eqsize + cash + self_empl, vardir = "Var_Mean",
+              combined_data = combined_data, domains = "Domain",
+              method = "ampl_yl", interval = c(0, 100000000), transformation = "log_crude",
+              eff_smpsize = "effsample", alpha = 0.05)
+
+summary(FH_test)
+plot(FH_test)
+
+
+library(emdi)
+load_shapeaustria()
+
+map_plot(FH_test, MSE = FALSE, CV = FALSE, map_obj = shape_austria_dis,
+         indicator = "EBLUP", map_dom_id = "PB")
+
+compare_fh(model = FH_test, indicator = "all", label = "orig",
+           color = c("blue", "lightblue3"),
+           shape = c(16, 16), line_type = c("solid", "solid"),
+           gg_theme = NULL)
+CV_plots(FH_test, label_direct = "Direct", label_FH = "FH", line = 10,
+         colline = "red", color = c("blue", "lightblue3"))
+
+
+
+################################################################################
+
+load("./Spielplatz/testdata.RData")
+
+
+
+
+
+
+

@@ -31,6 +31,7 @@ eblup_FH <- function(framework, sigmau2, combined_data) {
   # Computation of shrinkage factor
   gamma <- sigmau2 / (sigmau2 + framework$vardir)
   real_res <- framework$direct - (framework$model_X%*%Beta.hat + D%*%u.hat)
+  std_real_res <- real_res / sqrt(framework$vardir)
 
 
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])
@@ -62,6 +63,7 @@ eblup_FH <- function(framework, sigmau2, combined_data) {
                     gamma = gamma,
                     coefficients = eblup_coef,
                     real_res = real_res,
+                    std_real_res = std_real_res,
                     random_effects = u.hat)
 
   return(eblup_out)
