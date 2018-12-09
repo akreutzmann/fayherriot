@@ -298,11 +298,11 @@ analytical_mse <- function(framework, sigmau2, combined_data,
     } else if (method == "amrl" | method == "ampl") {
       MSE_data <- li_lahiri(framework = framework, sigmau2, combined_data,
                             method = method)
-      MSE_method <- paste0(method, "_corrected")
+      MSE_method <- "Li_Lahiri"
     } else if (method == "ampl_yl") {
       MSE_data <- yoshimori_lahiri(framework = framework, sigmau2, combined_data,
                             method = method)
-      MSE_method <- paste0(method, "_corrected")
+      MSE_method <- "Yoshimori_Lahiri"
     } else if (method == "amrl_yl") {
       MSE_data <- yoshimori_lahiri(framework = framework, sigmau2, combined_data,
                                    method = method)
