@@ -41,7 +41,7 @@
 
 fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                interval = c(0, 1000), transformation = "no", eff_smpsize = NULL,
-               MSE = "analytical", B = NULL, alpha = alpha) {
+               MSE = "analytical", B = NULL, alpha = 0.05) {
 
 
   # Save function call ---------------------------------------------------------
@@ -111,7 +111,7 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
 
     # Shrinkage factor
     Gamma <- data.frame(Domain = framework$data[[framework$domains]],
-                        Gamma = eblup$gamma)
+                        Gamma = as.numeric(eblup$gamma))
 
     # Back-transformation
     result_data <- backtransformed(framework = framework,
@@ -119,6 +119,7 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                                    transformation = transformation,
                                    combined_data = combined_data,
                                    method = method, interval = interval,
+                                   MSE = MSE,
                                    B = B, alpha = alpha)
 
     out <- list(ind = result_data$EBLUP_data,

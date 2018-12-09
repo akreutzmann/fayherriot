@@ -321,7 +321,6 @@ analytical_mse <- function(framework, sigmau2, combined_data,
 
 boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
                         eblup, B = 20, method = method,
-                        precision = precision, maxiter = maxiter,
                         interval = interval, alpha = alpha) {
 
 
@@ -379,7 +378,6 @@ boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
       framework2 <- framework
       framework2$direct <- ystar
       sigmau2_boot <- wrapper_estsigmau2(framework = framework2, method = method,
-                                    precision = precision, maxiter = maxiter,
                                     interval = interval)
 
 

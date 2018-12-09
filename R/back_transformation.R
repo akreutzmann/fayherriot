@@ -1,7 +1,7 @@
 
 backtransformed <- function(framework, sigmau2, eblup, transformation,
                             combined_data, method, vardir,
-                            interval, B, alpha) {
+                            interval, B, alpha, MSE) {
 
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])
   EBLUP_data$direct <- NA
@@ -107,7 +107,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     MSE_data$MSE[framework$obs_dom == FALSE] <- NA
     MSE_method <- "Chandra_B2"
 
-    } else if (transformation == "arcsin_boot") {
+    } else if (transformation == "arcsin" & MSE == "boot") {
 
 
       EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
@@ -123,7 +123,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       MSE_data$Li <- conf_int$Li
       MSE_data$Ui <- conf_int$Ui
       MSE_method <- "boot"
-    } else if (transformation == "arcsin_jack") {
+    } else if (transformation == "arcsin" & MSE == "jackknife") {
 
       EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
 

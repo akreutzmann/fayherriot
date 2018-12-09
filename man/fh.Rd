@@ -6,7 +6,7 @@
 \usage{
 fh(fixed, vardir, combined_data, domains = NULL, method = "reml",
   interval = c(0, 1000), transformation = "no", eff_smpsize = NULL,
-  MSE = "analytical", B = NULL, alpha = alpha)
+  MSE = "analytical", B = NULL, alpha = 0.05)
 }
 \arguments{
 \item{fixed}{a two-sided linear formula object describing the

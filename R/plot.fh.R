@@ -121,31 +121,32 @@ plot.fh <- function(x,
     names(plotList) <- c("qq_plots", "density_res","density_ran")
 
     residuals <- x$model$std_real_res
+    sresiduals <- (residuals - mean(residuals)) / sd(residuals)
     rand.eff <- x$model$random_effects
     srand.eff <- (rand.eff - mean(rand.eff)) / sd(rand.eff)
 
     # Check for label
     label <- list(qq_res = c(title = "Realized residuals",
-                             y_lab = "Quantiles of std. real. residuals",
+                             y_lab = "Quantiles of std. residuals/sqrt(vardir)",
                              x_lab = "Theoretical quantiles"),
                   qq_ran = c(title = "Random effect",
-                               y_lab = "Quantiles of random effects",
+                               y_lab = "Quantiles of std. random effects",
                                x_lab = "Theoretical quantiles"),
-                  d_res = c(title = "Density - Std. real. residuals",
+                  d_res = c(title = "Density - Std. residuals/sqrt(vardir)",
                               y_lab = "Density",
                               x_lab = "Std. real. residuals"),
                   d_ran = c(title = "Density - Random effects",
                               y_lab = "Density",
-                              x_lab = "Random effects"))
+                              x_lab = "Std. random effects"))
 
     ## QQ Plots
     # Residuals
-    res <- qplot(sample = residuals) +
+    res <- qplot(sample = sresiduals) +
       geom_abline(colour = color[1]) +
       ggtitle(label$qq_res["title"]) + ylab(label$qq_res["y_lab"]) +
       xlab(label$qq_res["x_lab"]) + gg_theme
 
-    tmp <- as.matrix(rand.eff[,1])
+    tmp <- as.matrix(rand.eff)
 
     # Random effects
     ran <- ggplot(data.frame(tmp) ,aes(sample = tmp)) +
@@ -159,7 +160,7 @@ plot.fh <- function(x,
     cat("Press [enter] to continue")
     line <- readline()
 
-    print( (plotList[[2]] <- ggplot(data.frame(Residuals = residuals),
+    print( (plotList[[2]] <- ggplot(data.frame(Residuals = sresiduals),
                                     aes(x = Residuals),
                                     fill = color[2], color = color[2]) +
               geom_density(fill = color[2], color = color[2],
