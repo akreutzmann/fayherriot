@@ -40,9 +40,8 @@
 
 
 fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
-                     MSE = "analytical", transformation = "no", eff_smpsize = NULL,
-                     interval = c(0, 1000),
-                     precision = 0.0001, maxiter = 100, alpha = alpha) {
+               interval = c(0, 1000), transformation = "no", eff_smpsize = NULL,
+               MSE = "analytical", B = NULL, alpha = alpha) {
 
 
   # Save function call ---------------------------------------------------------
@@ -57,7 +56,6 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
 
   # Estimate sigma u -----------------------------------------------------------
   sigmau2 <- wrapper_estsigmau2(framework = framework, method = method,
-                                precision = precision, maxiter = maxiter,
                                 interval = interval)
 
 
@@ -120,18 +118,17 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                                    sigmau2 = sigmau2, eblup = eblup,
                                    transformation = transformation,
                                    combined_data = combined_data,
-                                   method = method,
-                                   precision = precision, maxiter = maxiter,
-                                   interval = interval, alpha = alpha)
+                                   method = method, interval = interval,
+                                   B = B, alpha = alpha)
 
     out <- list(ind = result_data$EBLUP_data,
                 MSE = result_data$MSE_data,
                 transform_param = NULL,
                 model = list(coefficients = eblup$coefficients,
                              sigmau2 = sigmau2,
-                             random_effects = eblup$random_effects,
-                             real_residuals = eblup$real_res,
-                             std_real_residuals = eblup$std_real_res,
+                             random_effects = eblup$random_effects[, 1],
+                             real_residuals = eblup$real_res[, 1],
+                             std_real_residuals = eblup$std_real_res[, 1],
                              gamma = Gamma,
                              model_select = criteria),
                 framework = framework[c("direct", "vardir", "m", "M")],

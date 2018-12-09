@@ -1,41 +1,4 @@
-# Estimation functions for sigmau2 #############################################
-
-#' Function for estimating sigmau2 following the \pkg{sae} package.
-#'
-#' This function estimates sigmau2.
-#'
-#' @param vardir direct variance.
-#' @param precision precision criteria for the estimation of sigmau2.
-#' @param maxiter maximum of iterations for the estimation of sigmau2.
-#' @param X matrix with explanatory variables.
-#' @param y direct estimator.
-#' @return estimated sigmau2.
-#' @keywords internal
-
-
-saeReml <- function(vardir, precision, maxiter, X, y) {
-  Aest.REML <- 0
-  Aest.REML[1] <- median(vardir)
-  k <- 0
-  diff <- precision + 1
-  while ((diff > precision) & (k < maxiter)) {
-    k <- k + 1
-    Vi <- 1/(Aest.REML[k] + vardir)
-    XtVi <- t(Vi * X)
-    Q <- solve(XtVi %*% X)
-    P <- diag(Vi) - t(XtVi) %*% Q %*% XtVi
-    Py <- P %*% y
-    s <- (-0.5) * sum(diag(P)) + 0.5 * (t(Py) %*% Py)
-    F <- 0.5 * sum(diag(P %*% P))
-    Aest.REML[k + 1] <- Aest.REML[k] + s/F
-    diff <- abs((Aest.REML[k + 1] - Aest.REML[k])/Aest.REML[k])
-  }
-  A.REML <- max(Aest.REML[k + 1], 0)
-  return(sigmau_reml = A.REML)
-}
-
-
-#' Function for estimating sigmau2 following Nicola.
+#' Function for estimating sigmau2 with REML.
 #'
 #' This function estimates sigmau2.
 #'
@@ -48,7 +11,7 @@ saeReml <- function(vardir, precision, maxiter, X, y) {
 #' @keywords internal
 
 
-NicolaReml <- function(interval, direct, x, vardir, areanumber) {
+Reml <- function(interval, direct, x, vardir, areanumber) {
 
   A.reml <- function(interval, direct, x, vardir, areanumber) {
     psi <- matrix(c(vardir),areanumber,1)
@@ -326,13 +289,10 @@ MPL <- function(interval, direct, x, vardir, areanumber) {
 #' @return estimated sigmau2.
 #' @keywords internal
 
-wrapper_estsigmau2 <- function(framework, method, precision, maxiter, interval) {
+wrapper_estsigmau2 <- function(framework, method, interval) {
 
-  sigmau2 <- if (method == "sae_reml") {
-    saeReml(vardir = framework$vardir, precision = precision, maxiter = maxiter,
-                       X = framework$model_X, y = framework$direct)
-  } else if (method == "reml") {
-    NicolaReml(interval = interval, vardir = framework$vardir, x = framework$model_X,
+  sigmau2 <- if (method == "reml") {
+    Reml(interval = interval, vardir = framework$vardir, x = framework$model_X,
                           direct = framework$direct, areanumber = framework$m)
   } else if (method == "amrl") {
     AMRL(interval = interval, vardir = framework$vardir, x = framework$model_X,

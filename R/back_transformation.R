@@ -1,8 +1,7 @@
 
 backtransformed <- function(framework, sigmau2, eblup, transformation,
                             combined_data, method, vardir,
-                            precision, maxiter,
-                            interval, alpha) {
+                            interval, B, alpha) {
 
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])
   EBLUP_data$direct <- NA
@@ -118,10 +117,9 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
 
       EBLUP_data$EBLUP <- (sin(EBLUP_data$EBLUP))^2
       conf_int <- boot_arcsin(sigmau2 = sigmau2, combined_data = combined_data,
-                              framework = framework, eblup = eblup,  B = 20,
-                              method = method,
-                              precision = precision, maxiter = maxiter,
-                              interval = interval, alpha = alpha)
+                              framework = framework, eblup = eblup,
+                              method = method, interval = interval,
+                              B = B, alpha = alpha)
       MSE_data$Li <- conf_int$Li
       MSE_data$Ui <- conf_int$Ui
       MSE_method <- "boot"
