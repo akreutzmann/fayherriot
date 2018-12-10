@@ -230,7 +230,6 @@ summary(quality_gammaJack$RB * 100)
 quality_arcsinBoot <- QualityMeasure(True.mean = t(True.ratio), Est.mean = t(EBLUP.arcsinBoot),
                                MSE = t(MSE.REML), MSETF = FALSE)
 summary(quality_arcsinBoot$RB * 100)
-summary(quality_arcsinBoot$RB_RMSE * 100)
 
 quality_arcsinJack <- QualityMeasure(True.mean = t(True.ratio), Est.mean = t(EBLUP.arcsinJack),
                               MSE = t(MSE.arcsinJack), MSETF = TRUE)
