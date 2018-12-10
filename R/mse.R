@@ -298,11 +298,15 @@ analytical_mse <- function(framework, sigmau2, combined_data,
     } else if (method == "amrl" | method == "ampl") {
       MSE_data <- li_lahiri(framework = framework, sigmau2, combined_data,
                             method = method)
-      MSE_method <- paste0(method, "_corrected")
-    } else if (method == "amrl_yl" | method == "ampl_yl") {
+      MSE_method <- "Li_Lahiri"
+    } else if (method == "ampl_yl") {
       MSE_data <- yoshimori_lahiri(framework = framework, sigmau2, combined_data,
                             method = method)
-      MSE_method <- paste0(method, "_corrected")
+      MSE_method <- "Yoshimori_Lahiri"
+    } else if (method == "amrl_yl") {
+      MSE_data <- yoshimori_lahiri(framework = framework, sigmau2, combined_data,
+                                   method = method)
+      MSE_method <- "Prasad_Rao"
     } else if (method == "ml") {
       MSE_data <- datta_lahiri(framework = framework, sigmau2, combined_data)
       MSE_method <- "Datta_Lahiri"
@@ -317,7 +321,6 @@ analytical_mse <- function(framework, sigmau2, combined_data,
 
 boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
                         eblup, B = 20, method = method,
-                        precision = precision, maxiter = maxiter,
                         interval = interval, alpha = alpha) {
 
 
@@ -339,7 +342,7 @@ boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
 
     for (b in 1:B){
 
-      set.seed(b)
+      #set.seed(b)
 
       v_boot <- rnorm(M, 0, sqrt(sigmau2))
       e_boot <- rnorm(m, 0, sqrt(vardir))
@@ -375,7 +378,6 @@ boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
       framework2 <- framework
       framework2$direct <- ystar
       sigmau2_boot <- wrapper_estsigmau2(framework = framework2, method = method,
-                                    precision = precision, maxiter = maxiter,
                                     interval = interval)
 
 

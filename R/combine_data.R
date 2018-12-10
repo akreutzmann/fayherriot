@@ -13,19 +13,18 @@
 
 combine_data <- function(pop_data, pop_domains, smp_data, smp_domains, vardir) {
 
+
   smp_domains_vec <- smp_data[, smp_domains]
   pop_domains_vec <- pop_data[, pop_domains]
 
   obs_dom <- pop_domains_vec %in% smp_domains_vec
+  smp_data[, smp_domains] <- NULL
+  pop_data[, pop_domains] <- NULL
 
-  smp_data$idD <- pop_domains_vec[obs_dom == TRUE]
-  pop_data$idD <- pop_domains_vec
-  data <- merge(smp_data, pop_data, by = "idD", all = TRUE)
 
-  if (!is.null(vardir)) {
-    data$vardir <- NA
-    data$vardir[obs_dom == TRUE] <- vardir
-  }
+  smp_data[, pop_domains] <- pop_domains_vec[obs_dom == TRUE]
+  pop_data[, pop_domains] <- pop_domains_vec
+  data <- merge(smp_data, pop_data, by = pop_domains, all = TRUE)
 
   return(data)
 }

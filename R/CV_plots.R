@@ -18,15 +18,18 @@ CV_plots <- function(fit_FH, label_direct = "Direct",
                      label_FH = "FH-MI", line = 20, colline = "red",
                      color = c("dodgerblue4", "#99CC00")) {
 
+  plotList <- vector(mode = "list", length = 2)
+  names(plotList) <- c("CV_ordered", "CV_boxplot")
+
   area <- NULL
   cv <- NULL
   method <- NULL
 
   # Define a data frame with the different variables
-  x <- data.frame(Direct = fit_FH$ind$Direct,
-                  Var = fit_FH$MSE$Var,
-                  FH = fit_FH$ind$EBLUP,
-                  MSE = fit_FH$MSE$MSE)
+  x <- data.frame(Direct = fit_FH$ind$direct[fit_FH$ind$ind == 0],
+                  Var = fit_FH$MSE$Var[fit_FH$MSE$ind == 0],
+                  FH = fit_FH$ind$EBLUP[fit_FH$ind$ind == 0],
+                  MSE = fit_FH$MSE$MSE[fit_FH$MSE$ind == 0])
 
   x <- x[order(abs(sqrt(x$Var) / x$Direct)), ]
   x <- x[!is.na(x$Direct),]
@@ -45,43 +48,41 @@ CV_plots <- function(fit_FH, label_direct = "Direct",
 
   # Save plots
   if(!is.null(line)) {
-    cv_ordered <- ggplot(ggDat, aes(x = area, y = cv, colour = method)) +
-      geom_point() + labs(x = "Domain (sorted by increasing CV of Direct)",
-                          y = "CV",
-                          colour = "Method") +
-      scale_color_manual(values = color) +
-      theme_minimal(base_size = 25) + geom_hline(yintercept = line, size = 1,
-                                                 linetype = 2, col = colline)
+    print((plotList[[paste("ordered", "EBLUP", sep = "_")]] <- ggplot(ggDat, aes(x = area, y = cv, colour = method)) +
+             geom_point() + labs(x = "Domain (sorted by increasing CV of Direct)",
+                                 y = "CV",
+                                 colour = "Method") +
+             scale_color_manual(values = color) + geom_hline(yintercept = line, size = 1,
+                                                        linetype = 2, col = colline)))
+    cat("Press [enter] to continue")
+    line2 <- readline()
 
-    cv_boxplot <- ggplot(ggDat, aes(x = method, y = cv, fill = method)) +
-      geom_boxplot() +
-      coord_flip() +
-      labs(x = NULL, y = "CV") +
-      scale_fill_manual(name = "Method",
-                        values = color) +
-      theme_minimal(base_size = 25) + geom_hline(yintercept = line, size = 1,
-                                                 linetype = 2, col = colline)
+    print((plotList[[paste("boxplot", "EBLUP", sep = "_")]] <- ggplot(ggDat, aes(x = method, y = cv, fill = method)) +
+             geom_boxplot() +
+             coord_flip() +
+             labs(x = NULL, y = "CV") +
+             scale_fill_manual(name = "Method",
+                               values = color) + geom_hline(yintercept = line, size = 1,
+                                                        linetype = 2, col = colline)))
   } else if (is.null(line)) {
-    cv_ordered <- ggplot(ggDat, aes(x = area, y = cv, colour = method)) +
-      geom_point(size = 2.5) +
-      labs(x = "Domain (sorted by increasing CV of Direct)",
-           y = "CV",
-           colour = "Method") +
-      scale_color_manual(values = color) +
-      theme_minimal(base_size = 25)
+    print((plotList[[paste("ordered", "EBLUP", sep = "_")]] <- ggplot(ggDat, aes(x = area, y = cv, colour = method)) +
+             geom_point() + labs(x = "Domain (sorted by increasing CV of Direct)",
+                                 y = "CV",
+                                 colour = "Method") +
+             scale_color_manual(values = color) +
+             theme_minimal(base_size = 25)))
+    cat("Press [enter] to continue")
+    line2 <- readline()
 
-    cv_boxplot <- ggplot(ggDat, aes(x = method, y = cv, fill = method)) +
-      geom_boxplot() +
-      coord_flip() +
-      labs(x = NULL, y = "CV") +
-      scale_fill_manual(name = "Method",
-                        values = color) +
-      theme_minimal(base_size = 25)
+
+    print((plotList[[paste("boxplot", "EBLUP", sep = "_")]] <- ggplot(ggDat, aes(x = method, y = cv, fill = method)) +
+             geom_boxplot() +
+             coord_flip() +
+             labs(x = NULL, y = "CV") +
+             scale_fill_manual(name = "Method",
+                               values = color) +
+             theme_minimal(base_size = 25)))
 
   }
-
-
-
-  return(list(cv_ordered = cv_ordered, cv_boxplot = cv_boxplot))
-  invisible()
+  invisible(plotList)
 }

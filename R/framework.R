@@ -14,19 +14,17 @@ framework_FH <- function(combined_data, fixed, vardir, domains,
   #direct_orig <- direct
   #vardir_orig <- vardir
 
-  if (transformation == "log_crude" | transformation == "log_SM" | transformation == "log_BC2") {
+  if (transformation == "log_crude" | transformation == "log_SM") {
     direct_orig <- direct
     vardir_orig <- vardir
     vardir <- (1 / direct)^2 * vardir
     direct <- log(direct)
-  } else if (transformation == "arcsin_jack" | transformation == "arcsin_boot") {
+  } else if (transformation == "arcsin" | transformation == "arcsin") {
     direct_orig <- direct
     vardir_orig <- vardir
     direct <- asin(sqrt(direct))
     vardir <-  1/ (4 * data[, eff_smpsize])
   }
-
-
 
   if (is.null(domains)) {
     data$domains <- 1:length(direct)

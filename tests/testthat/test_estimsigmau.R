@@ -28,4 +28,7 @@ test_that("Does the FH_eblup function return the same point and mse estimates li
   expect_equal((fh_test$sigmau2 - benchmark$REML)/benchmark$REML < 1.2e-06,
                TRUE)
 
+  expect_equal((fh_test$sigmau2 - benchmark$REML)/benchmark$REML < 1.2e-06,
+               TRUE)
+
 })

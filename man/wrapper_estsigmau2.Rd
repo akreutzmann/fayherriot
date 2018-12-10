@@ -4,16 +4,16 @@
 \alias{wrapper_estsigmau2}
 \title{Wrapper function for the estmation of sigmau2}
 \usage{
-wrapper_estsigmau2(framework, method, precision, maxiter, interval)
+wrapper_estsigmau2(framework, method, interval)
 }
 \arguments{
-\item{precision}{precision criteria for the estimation of sigmau2.}
-
-\item{maxiter}{maximum of iterations for the estimation of sigmau2.}
-
 \item{interval}{interval for the algorithm.}
 
 \item{vardir}{direct variance.}
+
+\item{precision}{precision criteria for the estimation of sigmau2.}
+
+\item{maxiter}{maximum of iterations for the estimation of sigmau2.}
 
 \item{direct}{direct estimator.}
 
