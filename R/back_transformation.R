@@ -21,6 +21,16 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
     MSE_data$MSE <- exp(eblup$EBLUP_data$EBLUP)^2 * estim_MSE$MSE_data$MSE
     MSE_method <- estim_MSE$MSE_method
 
+  } else if (transformation == "log_naive") {
+
+    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                                combined_data = combined_data,
+                                method = method)
+
+    EBLUP_data$EBLUP <- exp(eblup$EBLUP_data$EBLUP)
+    MSE_data$MSE <- exp(eblup$EBLUP_data$EBLUP)^2 * estim_MSE$MSE_data$MSE
+    MSE_method <- estim_MSE$MSE_method
+
   } else if (transformation == "log_SM") {
 
     estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,

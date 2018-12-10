@@ -14,7 +14,7 @@ framework_FH <- function(combined_data, fixed, vardir, domains,
   #direct_orig <- direct
   #vardir_orig <- vardir
 
-  if (transformation == "log_crude" | transformation == "log_SM") {
+  if (transformation == "log_crude" | transformation == "log_SM" | transformation == "log_naive") {
     direct_orig <- direct
     vardir_orig <- vardir
     vardir <- (1 / direct)^2 * vardir
