@@ -99,7 +99,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       int_value <- NULL
       for (i in 1:framework$m) {
 
-        mu_dri <- EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]
+        mu_dri <- eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]
         # Get value of first domain
         mu_dri <- mu_dri[i]
 
@@ -110,9 +110,14 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
         integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
                                                           sd = sqrt(Var_dri))}
 
+        upper_bound <- min(mean(framework$direct) + 10 * sd(framework$direct),
+                           mu_dri + 100 * sqrt(Var_dri))
+        lower_bound <- max(mean(framework$direct) - 10 * sd(framework$direct),
+                           mu_dri - 100 * sqrt(Var_dri))
+
         int_value <- c(int_value, integrate(integrand,
-                                            lower = 0,
-                                            upper = pi / 2)$value)
+                                            lower = lower_bound,
+                                            upper = upper_bound)$value)
       }
 
       EBLUP_data$EBLUP_corr[eblup$EBLUP_data$ind == 0] <- int_value
