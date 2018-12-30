@@ -28,12 +28,12 @@ consecutively.}
 \item{method}{a character string describing the method for the estimation of
 the variance of the random effects. Methods that can be chosen
 (i) restricted maximum likelihood (REML) method ("\code{reml}"),
-(iii) maximum likelihood method ("\code{ml}"),
-(iv) adjusted REML following \cite{Li and Lahiri (2010)} ("\code{amrl}"),
-(v) adjusted ML following \cite{Li and Lahiri (2010)} ("\code{ampl}"),
-(vi) adjusted REML following \cite{Yoshimori and Lahiri (2014)}
+(ii) maximum likelihood method ("\code{ml}"),
+(iii) adjusted REML following \cite{Li and Lahiri (2010)} ("\code{amrl}"),
+(iv) adjusted ML following \cite{Li and Lahiri (2010)} ("\code{ampl}"),
+(v) adjusted REML following \cite{Yoshimori and Lahiri (2014)}
 ("\code{amrl_yl}"),
-(vii) adjusted ML following \cite{Yoshimori and Lahiri (2014)}
+(vi) adjusted ML following \cite{Yoshimori and Lahiri (2014)}
 ("\code{ampl_yl}").
  Defaults to "\code{reml}".}
 
@@ -43,12 +43,18 @@ the variance of the random effects. Methods that can be chosen
 
 \item{eff_smpsize}{Effective sample size.}
 
-\item{MSE}{a character string determining the estimation of the MSE estimates.
-Analytical or jackknife MSEs can be chosen.}
+\item{MSE}{a character string determining the estimation method of the MSE.
+Methods that can be chosen
+(i) analytical MSE depending on the estimation method of the variance of the
+random effect ("\code{analytical}"),
+(ii) a jackknife MSE ("\code{jackknife}"),
+(iii) and a bootstrap that returns the backtransformed confidence intervals
+when the arcsin transformation is chosen ("\code{boot}").}
 
-\item{precision}{precision criteria for the estimation of sigmau2.}
+\item{B}{numeric value that determines the number of bootstrap iterations.}
 
-\item{maxiter}{maximum of iterations for the estimation of sigmau2.}
+\item{alpha}{a numeric value that determines the confidence level for the
+confidence intervals.}
 }
 \value{
 fitted FH model.

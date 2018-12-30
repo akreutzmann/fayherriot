@@ -90,7 +90,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       MSE_data$Li <- conf_int$Li
       MSE_data$Ui <- conf_int$Ui
       MSE_method <- "boot"
-    } else if (transformation == "arcsin" & MSE == "jackknife") {
+    } else if (transformation == "arcsin" & MSE != "boot") {
 
       EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
       EBLUP_data$EBLUP[EBLUP_data$EBLUP < 0] <- 0
@@ -119,10 +119,10 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       EBLUP_data$EBLUP <- (sin(EBLUP_data$EBLUP))^2
 
 
-      jack_mse <- jiang_jackknife(framework = framework,
-                                  combined_data = combined_data, sigmau2 = sigmau2,
-                                  vardir = vardir, eblup = eblup, transformation = transformation,
-                                  method = method, interval = interval)
+      jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
+                              sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                              transformation = transformation, method = method,
+                              interval = interval, MSE = MSE)
 
 
       back_jack_mse <- 2 * sin(eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]) * cos(eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]) * jack_mse$MSE_data$MSE[jack_mse$MSE_data$ind == 0]
@@ -130,7 +130,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       MSE_data$MSE[framework$obs_dom == TRUE] <- back_jack_mse
       #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
       MSE_data$MSE[framework$obs_dom == FALSE] <- NA
-      MSE_method <- "jackknife"
+      MSE_method <- jack_mse$MSE_method
     }
 
   EBLUP_data$ind[framework$obs_dom == TRUE] <- 0
