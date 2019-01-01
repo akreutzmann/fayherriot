@@ -39,7 +39,14 @@ the variance of the random effects. Methods that can be chosen
 
 \item{interval}{interval for the estimation of sigmau2.}
 
-\item{transformation}{choses type of transformation and back-transformation.}
+\item{transformation}{a character that determines the type of transformation
+and back-transformation. Methods that can be chosen
+(i) no transformation ("\code{no}")
+(ii) log transformation with naive back-transformation, i.e. simply taking the
+exponential ("\code{log_naive}"),
+(iii) log transformation with crude back-transformation ("\code{log_crude}"),
+(iv) log transformation with Slud-Maiti back-transformation ("\code{log_SM}")
+and (v) arcsin transformation with naive back-transformation ("\code{arcsin}")}
 
 \item{eff_smpsize}{Effective sample size.}
 

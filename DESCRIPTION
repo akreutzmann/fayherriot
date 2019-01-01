@@ -12,6 +12,10 @@ LazyData: true
 RoxygenNote: 6.1.1
 Imports: formula.tools,
     stats,
-    ggplot2
-Suggests: 
+    ggplot2,
+    HLMdiag,
+    gridExtra,
+    moments,
+    reshape2
+Suggests:
     testthat

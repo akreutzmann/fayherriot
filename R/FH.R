@@ -26,7 +26,14 @@
 #' ("\code{ampl_yl}").
 #'  Defaults to "\code{reml}".
 #' @param interval interval for the estimation of sigmau2.
-#' @param transformation choses type of transformation and back-transformation.
+#' @param transformation a character that determines the type of transformation
+#' and back-transformation. Methods that can be chosen
+#' (i) no transformation ("\code{no}")
+#' (ii) log transformation with naive back-transformation, i.e. simply taking the
+#' exponential ("\code{log_naive}"),
+#' (iii) log transformation with crude back-transformation ("\code{log_crude}"),
+#' (iv) log transformation with Slud-Maiti back-transformation ("\code{log_SM}")
+#' and (v) arcsin transformation with naive back-transformation ("\code{arcsin}")
 #' @param eff_smpsize Effective sample size.
 #' @param MSE a character string determining the estimation method of the MSE.
 #' Methods that can be chosen
