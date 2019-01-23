@@ -82,6 +82,33 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       EBLUP_data$EBLUP[EBLUP_data$EBLUP < 0] <- 0
       EBLUP_data$EBLUP[EBLUP_data$EBLUP > (pi / 2)] <- (pi / 2)
 
+      int_value <- NULL
+      for (i in 1:framework$m) {
+
+        mu_dri <- eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]
+        # Get value of first domain
+        mu_dri <- mu_dri[i]
+
+
+        Var_dri <- sigmau2 * (1 - eblup$gamma)
+        Var_dri <- as.numeric(Var_dri[i])
+
+        integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
+                                                            sd = sqrt(Var_dri))}
+
+        upper_bound <- min(mean(framework$direct) + 10 * sd(framework$direct),
+                           mu_dri + 100 * sqrt(Var_dri))
+        lower_bound <- max(mean(framework$direct) - 10 * sd(framework$direct),
+                           mu_dri - 100 * sqrt(Var_dri))
+
+        int_value <- c(int_value, integrate(integrand,
+                                            lower = 0,
+                                            upper = pi/2)$value)
+      }
+
+      EBLUP_data$EBLUP_corr[eblup$EBLUP_data$ind == 0] <- int_value
+
+
       EBLUP_data$EBLUP <- (sin(EBLUP_data$EBLUP))^2
       conf_int <- boot_arcsin(sigmau2 = sigmau2, combined_data = combined_data,
                               framework = framework, eblup = eblup,
@@ -116,8 +143,8 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                            mu_dri - 100 * sqrt(Var_dri))
 
         int_value <- c(int_value, integrate(integrand,
-                                            lower = lower_bound,
-                                            upper = upper_bound)$value)
+                                            lower = 0,
+                                            upper = pi/2)$value)
       }
 
       EBLUP_data$EBLUP_corr[eblup$EBLUP_data$ind == 0] <- int_value
