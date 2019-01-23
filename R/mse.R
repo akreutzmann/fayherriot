@@ -522,3 +522,20 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transforma
 
   return(mse_out)
 }
+
+
+
+
+wrapper_MSE <- function(framework, combined_data, sigmau2, vardir, eblup,
+                        transformation, method, interval, MSE) {
+  MSE_data <- if (MSE == "analytical") {
+    analytical_mse(framework = framework, sigmau2 = sigmau2,
+                   combined_data = combined_data, method = method)
+  } else if (MSE == "jackknife") {
+    jiang_jackknife(framework = framework, combined_data = combined_data,
+                    sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                    transformation = transformation, method = method,
+                    interval = interval)
+  }
+  return(MSE_data)
+}

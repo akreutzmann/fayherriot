@@ -102,7 +102,6 @@
 #' @importFrom ggplot2 scale_color_manual scale_fill_manual geom_segment
 #' @importFrom ggplot2 scale_linetype_discrete geom_density geom_text
 #' @importFrom ggplot2 geom_line geom_vline stat_function geom_qq
-#' @importFrom nlme ranef random.effects
 #' @importFrom gridExtra arrangeGrob grid.arrange
 #' @importFrom stats shapiro.test logLik cooks.distance
 #' @import HLMdiag

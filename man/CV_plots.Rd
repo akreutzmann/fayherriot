@@ -4,8 +4,8 @@
 \alias{CV_plots}
 \title{CV plots}
 \usage{
-CV_plots(fit_FH, label_direct = "Direct", label_FH = "FH-MI",
-  line = 20, colline = "red", color = c("dodgerblue4", "#99CC00"))
+CV_plots(fit_FH, label_direct = "Direct", label_FH = "FH-MI", line = 20,
+  colline = "red", color = c("dodgerblue4", "#99CC00"))
 }
 \arguments{
 \item{fit_FH}{fitted FH model.}
