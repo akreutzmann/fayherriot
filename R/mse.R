@@ -319,9 +319,9 @@ analytical_mse <- function(framework, sigmau2, combined_data,
   }
 
 
-boot_arcsin <- function(M, m, sigmau2, vardir, combined_data, framework,
-                        eblup, B = 20, method = method,
-                        interval = interval, alpha = alpha) {
+boot_arcsin <- function(sigmau2, vardir, combined_data, framework,
+                        eblup, B, method,
+                        interval, alpha) {
 
 
   M <- framework$M
@@ -521,6 +521,149 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transforma
                   MSE_method = "jackknife")
 
   return(mse_out)
+}
+
+boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
+                        eblup, B, method,
+                        interval, alpha) {
+
+
+  M <- framework$M
+  m <- framework$m
+  vardir <- framework$vardir
+  eff_smpsize <- framework$eff_smpsize
+  x <- framework$model_X
+
+  mse <- rep(NA, m)
+
+  ### Bootstrap
+  g1_star <- matrix(NA, m, B)
+  g2_star <- matrix(NA, m, B)
+  in_sample <- framework$obs_dom == TRUE
+  out_sample <- framework$obs_dom == FALSE
+
+  for (b in 1:B){
+
+    #set.seed(b)
+    # Generate bootstrap samples on transformed scale
+
+    v_boot <- rnorm(m, 0, sqrt(sigmau2))
+    e_boot <- rnorm(m, 0, sqrt(vardir))
+
+
+    # Bootstrap sample on transformed scale
+    h_star <- x %*% eblup$coefficients$coefficients + v_boot + e_boot
+
+    # Truncation
+    h_star[h_star < 0] <- 0
+    h_star[h_star > (pi / 2)] <- (pi / 2)
+
+    y_star <- (sin(h_star))^2
+
+    framework_boot <- framework
+    framework_boot$direct <- y_star
+
+    # Estimate sigma u -----------------------------------------------------------
+    sigmau2_boot <- wrapper_estsigmau2(framework = framework_boot, method = method,
+                                  interval = interval)
+    # Standard EBLUP -------------------------------------------------------------
+    eblup_boot <- eblup_FH(framework = framework_boot, sigmau2 = sigmau2,
+                      combined_data = combined_data)
+
+
+    g1_boot <- rep(0, framework$m)
+    # Inverse of total variance
+    Vi_boot <- 1/(sigmau2_boot + framework$vardir)
+    # Shrinkage factor
+    Bd_boot <- framework$vardir/(sigmau2_boot + framework$vardir)
+    # Squared inverse of total variance
+    SumAD2_boot <- sum(Vi_boot^2)
+    # X'Vi
+    XtVi_boot <- t(Vi_boot * framework$model_X)
+    # (X'ViX)^-1
+    Q_boot <- solve(XtVi_boot %*% framework$model_X)
+
+    # 2 divided by squared inverse of total variance
+    VarA_boot <- 2/SumAD2_boot
+
+    for (d in 1:framework$m) {
+      # Variance due to random effects: vardir * gamma
+      g1_boot[d] <- framework$vardir[d] * (1 - Bd_boot[d])
+      # Covariate for single domain
+      xd_boot <- matrix(framework$model_X[d, ], nrow = 1, ncol = framework$p)
+      # Variance due to the estimation of beta
+    }
+
+
+    # Truncation
+    mu_star_temp <- x %*% eblup$coefficients$coefficients + v_boot
+
+    mu_star_temp[mu_star_temp < 0] <- 0
+    mu_star_temp[mu_star_temp > (pi / 2)] <- (pi / 2)
+
+    mu_star <- (sin(mu_star_temp))^2
+
+
+    # Get the back_transformed estimate
+    int_value <- NULL
+    for (i in 1:framework$m) {
+      mu_dri <- eblup$EBLUP_data$EBLUP[in_sample]
+      # Get value of first domain
+      mu_dri <- mu_dri[i]
+
+
+      Var_dri <- sigmau2 * (1 - eblup$gamma)
+      Var_dri <- as.numeric(Var_dri[i])
+
+      integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
+                                                          sd = sqrt(Var_dri))}
+      int_value <- c(int_value, integrate(integrand,
+                                          lower = 0,
+                                          upper = pi/2)$value)
+    }
+
+    g2_boot <- (as.numeric(mu_star) - int_value)^2
+
+    g1_star[, b] <- g1_boot
+    g2_star[, b] <- g2_boot
+  }
+
+  g1 <- rep(0, framework$m)
+  # Inverse of total variance
+  Vi <- 1/(sigmau2 + framework$vardir)
+  # Shrinkage factor
+  Bd <- framework$vardir/(sigmau2 + framework$vardir)
+  # Squared inverse of total variance
+  SumAD2 <- sum(Vi^2)
+  # X'Vi
+  XtVi <- t(Vi * framework$model_X)
+  # (X'ViX)^-1
+  Q <- solve(XtVi %*% framework$model_X)
+
+  # 2 divided by squared inverse of total variance
+  VarA <- 2/SumAD2
+
+  for (d in 1:framework$m) {
+    # Variance due to random effects: vardir * gamma
+    g1[d] <- framework$vardir[d] * (1 - Bd[d])
+  }
+
+  g1_bc <- 2 * g1 - as.numeric(rowMeans(g1_star))
+  g2_star_exp <- as.numeric(rowMeans(g2_star))
+
+  mse <- g1_bc + g2_star_exp
+
+  MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
+  MSE_data$Var <- NA
+  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+
+  # Small area MSE
+  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$ind[framework$obs_dom == TRUE] <- 0
+  MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+  MSE_data$ind[framework$obs_dom == FALSE] <- 1
+
+  return(MSE_data)
 }
 
 
