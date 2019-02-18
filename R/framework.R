@@ -5,6 +5,7 @@ framework_FH <- function(combined_data, fixed, vardir, domains,
 
   data <- combined_data[obs_dom == TRUE,]
 
+
   # Get response variable and model matrix from formula and data
   direct <- makeXY(fixed, data)$y
   model_X <- makeXY(fixed, data)$x

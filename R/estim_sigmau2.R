@@ -14,7 +14,7 @@
 Reml <- function(interval, direct, x, vardir, areanumber) {
 
   A.reml <- function(interval, direct, x, vardir, areanumber) {
-    psi <- matrix(c(vardir),areanumber,1)
+    psi <- matrix(c(vardir), areanumber,1)
     Y <- matrix(c(direct),areanumber,1)
     X <- x
     Z.area <- diag(1,areanumber)
