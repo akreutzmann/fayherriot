@@ -23,7 +23,7 @@ summary.fh <- function (object) {
     if (length(object$model$std_real_residuals) >= 3 & length(object$model$std_real_residuals) <
         5000) {
       shapiro_stdres_W <- shapiro.test(object$model$std_real_residuals)[[1]]
-      shapiro_stdres_p <- shapiro.test(object$model$real_residuals)[[2]]
+      shapiro_stdres_p <- shapiro.test(object$model$std_real_residuals)[[2]]
     }
     else {
       warning("Number of domains must be between 3 and 5000, otherwise the\n Shapiro-Wilk test is not applicable.")
