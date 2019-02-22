@@ -524,7 +524,7 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transforma
 }
 
 boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
-                        eblup, B, method,
+                        eblup, B, method, transformation = transformation,
                         interval, alpha) {
 
 
@@ -560,48 +560,75 @@ boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
 
     y_star <- (sin(h_star))^2
 
-    framework_boot <- framework
-    framework_boot$direct <- y_star
+    combined_data_boot <- combined_data
+    combined_data_boot[in_sample, paste(framework$formula[2])] <- y_star
+
+
+    framework_boot <- framework_FH(combined_data = combined_data_boot,
+                                   fixed = framework$formula,
+                                   vardir = framework$vardir_orig, domains = framework$domains,
+                                   transformation = transformation,
+                                   eff_smpsize = framework$eff_smpsize)
 
     # Estimate sigma u -----------------------------------------------------------
     sigmau2_boot <- wrapper_estsigmau2(framework = framework_boot, method = method,
                                   interval = interval)
+    # sigmau2 star is estimated
+
     # Standard EBLUP -------------------------------------------------------------
-    eblup_boot <- eblup_FH(framework = framework_boot, sigmau2 = sigmau2,
-                      combined_data = combined_data)
+    eblup_boot <- eblup_FH(framework = framework_boot, sigmau2 = sigmau2_boot,
+                      combined_data = combined_data_boot)
+    # beta star is estimated
 
 
+    # Estimation of g1 on transformed scale for bootstrap estimates
     g1_boot <- rep(0, framework$m)
     # Inverse of total variance
     Vi_boot <- 1/(sigmau2_boot + framework$vardir)
     # Shrinkage factor
     Bd_boot <- framework$vardir/(sigmau2_boot + framework$vardir)
     # Squared inverse of total variance
-    SumAD2_boot <- sum(Vi_boot^2)
+    #SumAD2_boot <- sum(Vi_boot^2)
     # X'Vi
-    XtVi_boot <- t(Vi_boot * framework$model_X)
+    #XtVi_boot <- t(Vi_boot * framework$model_X)
     # (X'ViX)^-1
-    Q_boot <- solve(XtVi_boot %*% framework$model_X)
+    #Q_boot <- solve(XtVi_boot %*% framework$model_X)
 
     # 2 divided by squared inverse of total variance
-    VarA_boot <- 2/SumAD2_boot
+    #VarA_boot <- 2/SumAD2_boot
 
     for (d in 1:framework$m) {
       # Variance due to random effects: vardir * gamma
       g1_boot[d] <- framework$vardir[d] * (1 - Bd_boot[d])
       # Covariate for single domain
-      xd_boot <- matrix(framework$model_X[d, ], nrow = 1, ncol = framework$p)
+      #xd_boot <- matrix(framework$model_X[d, ], nrow = 1, ncol = framework$p)
       # Variance due to the estimation of beta
     }
 
-
     # Truncation
-    mu_star_temp <- x %*% eblup$coefficients$coefficients + v_boot
+    #mu_star_temp <- x %*% eblup$coefficient$coefficients + v_boot
 
-    mu_star_temp[mu_star_temp < 0] <- 0
-    mu_star_temp[mu_star_temp > (pi / 2)] <- (pi / 2)
+    #mu_star_temp[mu_star_temp < 0] <- 0
+    #mu_star_temp[mu_star_temp > (pi / 2)] <- (pi / 2)
 
-    mu_star <- (sin(mu_star_temp))^2
+    #mu_star <- (sin(mu_star_temp))^2
+
+    mu_star_int <- NULL
+    for (i in 1:framework$m) {
+      mu_dri_int <- x %*% eblup$coefficient$coefficients
+      # Get value of first domain
+      mu_dri_int <- mu_dri_int[i]
+
+
+      Var_dri_int <- sigmau2
+      #Var_dri_boot <- as.numeric(Var_dri_boot[i])
+
+      integrand_int <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri_int,
+                                                          sd = sqrt(Var_dri_int))}
+      mu_star_int <- c(mu_star_int, integrate(integrand_int,
+                                          lower = 0,
+                                          upper = pi/2)$value)
+    }
 
 
     # Get the back_transformed estimate
@@ -622,7 +649,8 @@ boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
                                           upper = pi/2)$value)
     }
 
-    g2_boot <- (as.numeric(mu_star) - int_value)^2
+
+    g2_boot <- (mu_star_int - int_value)^2
 
     g1_star[, b] <- g1_boot
     g2_star[, b] <- g2_boot
@@ -633,15 +661,6 @@ boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
   Vi <- 1/(sigmau2 + framework$vardir)
   # Shrinkage factor
   Bd <- framework$vardir/(sigmau2 + framework$vardir)
-  # Squared inverse of total variance
-  SumAD2 <- sum(Vi^2)
-  # X'Vi
-  XtVi <- t(Vi * framework$model_X)
-  # (X'ViX)^-1
-  Q <- solve(XtVi %*% framework$model_X)
-
-  # 2 divided by squared inverse of total variance
-  VarA <- 2/SumAD2
 
   for (d in 1:framework$m) {
     # Variance due to random effects: vardir * gamma
@@ -662,6 +681,12 @@ boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
   MSE_data$MSE[framework$obs_dom == FALSE] <- NA
   MSE_data$ind[framework$obs_dom == FALSE] <- 1
+
+  MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc
+  MSE_data$G1[framework$obs_dom == FALSE] <- NA
+
+  MSE_data$G2[framework$obs_dom == TRUE] <- g2_star_exp
+  MSE_data$G2[framework$obs_dom == FALSE] <- NA
 
   return(MSE_data)
 }
