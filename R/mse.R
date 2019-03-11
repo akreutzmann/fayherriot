@@ -694,6 +694,187 @@ boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
 
 
 
+boot_sugasawa2 <- function(sigmau2, vardir, combined_data, framework,
+                          eblup, B, MC, method, transformation = transformation,
+                          interval, alpha) {
+
+  M <- framework$M
+  m <- framework$m
+  vardir <- framework$vardir
+  direct <- framework$direct
+  eff_smpsize <- framework$eff_smpsize
+  X <- framework$model_X
+  in_sample <- framework$obs_dom == TRUE
+  out_sample <- framework$obs_dom == FALSE
+
+  # Arcsin transformation
+  ArcsinTrafo = function(y){
+    y[y < 0] <- 0
+    y[y > 1] <- 1
+    asin(sqrt(y))
+  }
+
+  # Inverse of arcsin transformation
+  invArcsin = function(y){
+    y[y < 0] <- 0
+    y[y > pi/2] <- pi/2
+    sin(y)^2
+  }
+
+
+  generate.PTFH = function(m, sigmau2, vardir, eblup){
+    # Number of domains
+    # m = dim(X)[1]
+    # Number of covariates
+    # p = dim(X)[2]
+    # Estimated lambda
+    # la = para[1]
+    # Estimated sigmau2
+    # A = para[2]
+    # A = sigmau2
+    # Estimated coefficients
+    #beta = para[3:(2+p)]
+    beta = eblup$coefficients$coefficients
+
+    # "True" values: synthetic part plus N(0, A)
+    true = X%*%beta + rnorm(m, 0, sqrt(sigmau2))
+    true = as.vector(true)
+    # "Observed" values: "true" values plus N(0, D)
+    obs = true + rnorm(m, 0, sqrt(vardir))
+    # Before values are returned, these are back-transformed by the
+    # inverse transfsormation
+    return(list(invArcsin(true), invArcsin(obs)))
+  }
+
+  g1 = function(m, X, vardir, sigmau2, eblup, MC) {
+    # Estimated lambda
+    #la=para[1]
+    # Estimated sigmau2
+    # A=para[2]
+    # Estimated coefficients
+    beta <- eblup$coefficients$coefficients
+    # Synthetic parts
+    mu <- as.vector(X%*%beta)
+
+    # G1 estimation following equation 2.5
+    a = sigmau2 / (sigmau2 + vardir)
+    c1 = sqrt((1 + a) / 2)
+    c2 = sqrt((1 - a) / 2)
+
+    int = c()
+    for(i in 1:m) {
+      # MC specifies the number of MC iterations
+      # Large samples of z1 and z2 are
+      z1 = rnorm(MC, 0, sqrt(sigmau2))
+      z2 = rnorm(MC, 0, sqrt(sigmau2))
+      rn = invArcsin(mu[i] + z1)^2 - invArcsin(mu[i] + c1[i] * z1 + c2[i] * z2) *
+        invArcsin(mu[i] + c1[i] * z1 - c2[i] * z2)
+      int[i] = mean(rn)
+    }
+    return(int)
+  }
+
+
+  predict = function(direct, X, m, sigmau2, vardir, eblup, MC){
+    # Estimated lambda
+    # la = para[1]
+    # Estimated sigmau2
+    # A = para[2]
+    # Estimated coefficients
+    beta = eblup$coefficients$coefficients
+    # FH estimator: (1 - gomma) * synthetic part + gamma * h(direct)
+    th = vardir / (sigmau2 + vardir) * (X%*%beta) + (sigmau2 / (sigmau2 + vardir)) * ArcsinTrafo(direct)
+    # Variance of ??
+    si = sigmau2 * vardir / (sigmau2 + vardir)
+
+    # Prediction of ???
+    pred = c()
+    for(i in 1:m){
+      rn = rnorm(MC, th[i], sqrt(si)[i])
+      pred[i] = mean(invArcsin(rn))
+    }
+    return(pred)
+  }
+
+  # Vectors for g1 and g2 part
+  g1b = matrix(NA, B, m)
+  g2b = matrix(NA, B, m)
+
+  # Bootstrap
+  for(b in 1:B) {
+    # Get "true" and "observed" values
+    dd = generate.PTFH(m = m, sigmau2 = sigmau2, vardir = vardir, eblup = eblup)
+    # Back-transformed true values
+    true = dd[[1]]
+    # Back-transformed observed values
+    boot = dd[[2]]
+    # Estimate parameters with back-transformed observed values
+    combined_data_boot <- combined_data
+    combined_data_boot[in_sample, paste(framework$formula[2])] <- boot
+
+    framework_boot <- framework_FH(combined_data = combined_data_boot,
+                                   fixed = framework$formula,
+                                   vardir = vardir, domains = framework$domains,
+                                   transformation = transformation,
+                                   eff_smpsize = eff_smpsize)
+
+
+    # Estimate sigma u -----------------------------------------------------------
+    sigmau2_boot <- wrapper_estsigmau2(framework = framework_boot, method = method,
+                                  interval = interval)
+
+
+    # Standard EBLUP -------------------------------------------------------------
+    eblup_boot <- eblup_FH(framework = framework_boot, sigmau2 = sigmau2_boot,
+                      combined_data = combined_data_boot)
+
+    # Predict ??? with "observed" bootstrap values and estimated parameters
+    # obtained from "observed" bootstrap values
+    EBE <- predict(direct = framework_boot$direct, X = X, m = m, sigmau2 = sigmau2_boot,
+                   vardir = vardir, eblup = eblup_boot, MC = MC)
+    # Predict ??? with "observed" bootstrap values and estimated parameters
+    # obtained from original data
+    BE = predict(direct = framework_boot$direct, X = X, m = m, sigmau2 = sigmau2,
+                 vardir = vardir, eblup = eblup, MC = MC)
+    # Calculate g1 following equation 2.5
+    g1b[b, ] = g1(m = m, X = X, vardir = vardir, sigmau2 = sigmau2_boot, eblup = eblup_boot,
+                  MC = MC)
+    # Calculate g2 following step 3
+    g2b[b, ] = (EBE - BE)^2
+  }
+
+  # Calculate MSE following equation 2.7
+  mse = 2 * g1(m = m, X = X, vardir = vardir, sigmau2 = sigmau2, eblup = eblup,
+               MC = MC) - apply(g1b, 2, mean) + apply(g2b, 2, mean)
+
+  g1_bc <- 2 * g1(m = m, X = X, vardir = vardir, sigmau2 = sigmau2, eblup = eblup,
+                  MC = MC) - apply(g1b, 2, mean)
+
+  g2_boot <- apply(g2b, 2, mean)
+
+
+
+  MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
+  MSE_data$Var <- NA
+  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+
+  # Small area MSE
+  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$ind[framework$obs_dom == TRUE] <- 0
+  MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+  MSE_data$ind[framework$obs_dom == FALSE] <- 1
+
+  MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc
+  MSE_data$G1[framework$obs_dom == FALSE] <- NA
+
+  MSE_data$G2[framework$obs_dom == TRUE] <- g2_boot
+  MSE_data$G2[framework$obs_dom == FALSE] <- NA
+
+  return(MSE_data)
+}
+
+
+
 wrapper_MSE <- function(framework, combined_data, sigmau2, vardir, eblup,
                         transformation, method, interval, MSE) {
   MSE_data <- if (MSE == "analytical") {
