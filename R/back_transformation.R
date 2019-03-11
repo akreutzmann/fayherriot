@@ -116,7 +116,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                               B = B, alpha = alpha)
       MSE_boot <- boot_sugasawa2(sigmau2 = sigmau2, combined_data = combined_data,
                                 framework = framework, transformation = transformation,
-                                eblup = eblup, B = B, MC = 5000, method = method,
+                                eblup = eblup, B = B, MC = 1000, method = method,
                                 interval = interval, alpha = alpha)
       MSE_data$MSE <- MSE_boot$MSE
       MSE_data$G1 <- MSE_boot$G1
