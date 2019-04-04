@@ -439,7 +439,7 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transforma
                             vardir, method, interval) {
 
 
-
+  # this MSE estimator can leed to negative values
   m <- framework$m
   jack_sigmau2 <- vector(length = m)
   diff_jack_eblups <- data.frame(row.names = 1:m)
