@@ -1,5 +1,5 @@
 prasad_rao <- function(framework, sigmau2, combined_data) {
-
+ 
   g1 <- rep(0, framework$m)
   g2 <- rep(0, framework$m)
   g3 <- rep(0, framework$m)
