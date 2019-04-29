@@ -37,7 +37,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
 
     estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
                              combined_data = combined_data,
-                             method = method)
+                              method = method)
 
     int_value <- NULL
     for (i in 1:framework$m) {
