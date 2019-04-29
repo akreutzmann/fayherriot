@@ -654,9 +654,6 @@ chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, tr
       sum(b_wj) * (framework$vardir^2 / (framework$vardir + sigmau2)^2) - #ueberprueft
       diag(L_d %*% Sig_d %*% t(L_d) * sum(v_wj))
     
-    test <- diag(L_d %*% (framework$direct - framework$model_X %*% Beta.hat) %*% 
-                   t(framework$direct - framework$model_X %*% Beta.hat) %*% t(L_d) * sum(v_wj))
-    
     jack_mse_weighted_neg <- g1 + g2 + w_u * rowSums(diff_jack_eblups^2) - app_bias_correction 
   }
   
