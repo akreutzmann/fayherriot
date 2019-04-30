@@ -128,7 +128,7 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
       MSE_data$Ui <- conf_int$Ui
       MSE_method <- "boot"
     } 
-  else if (transformation == "arcsin" & MSE != "boot") {
+  else if (transformation == "arcsin" & MSE == "jackknife") {
 
       EBLUP_data$EBLUP <- eblup$EBLUP_data$EBLUP
       EBLUP_data$EBLUP[EBLUP_data$EBLUP < 0] <- 0
