@@ -1,5 +1,5 @@
 prasad_rao <- function(framework, sigmau2, combined_data) {
- 
+
   g1 <- rep(0, framework$m)
   g2 <- rep(0, framework$m)
   g3 <- rep(0, framework$m)
@@ -525,20 +525,20 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transforma
 
 chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, transformation,
                                     vardir, method, interval) {
-  
+
   # implementiert nach:
   # Chen S., Lahiri P. (2002), A Weighted Jackknife MSPE Estimator in Small-Area Estimation,
   # "Proceeding of the Section on Survey Research Methods", American Statistical Association,
   # pp. 473-477.
-  
-  # hier wurden erstmal die weights aus d-1/d festgelegt, es gibt auch andere Optionen 
-  
+
+  # hier wurden erstmal die weights aus d-1/d festgelegt, es gibt auch andere Optionen
+
   m <- framework$m
   jack_sigmau2 <- vector(length = m)
   diff_jack_eblups <- data.frame(row.names = 1:m)
   diff_jack_g1 <- data.frame(row.names = 1:m)
   diff_jack_g2 <- data.frame(row.names = 1:m)
-  
+
   g1 <- rep(0, framework$m)
   jack_mse <- rep(0, framework$m)
   jack_mse_weighted <- rep(0, framework$m)
@@ -546,34 +546,34 @@ chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, tr
   Vi <- 1/(sigmau2 + framework$vardir)
   # Shrinkage factor
   Bd <- framework$vardir/(sigmau2 + framework$vardir)
-  
-  
+
+
   for (d in 1:framework$m) {
     # Variance due to random effects: vardir * gamma
     g1[d] <- framework$vardir[d] * (1 - Bd[d])
   }
-  
-  
+
+
   Nenner <- rep(0, framework$m)
   for (d in 1:framework$m) {
-    Nenner[d] <- (framework$model_X[d,] %*% framework$model_X[d,]) / 
+    Nenner[d] <- (framework$model_X[d,] %*% framework$model_X[d,]) /
       (framework$vardir[d] + sigmau2)
   }
-  
-  
+
+
   g2 <- rep(0, framework$m)
   for (d in 1:framework$m) {
     # Variance due to beta estimation
     g2[d] <- (Bd[d])^2 * framework$model_X[d,] %*% framework$model_X[d,] * (sum(Nenner))^(-1)
   }
-  
+
   for (domain in 1:m) {
     print(domain)
-    
-    
+
+
     data_insample <- combined_data[framework$obs_dom,]
     data_tmp <- data_insample[-domain,]
-    
+
     # Framework with temporary data
     framework_tmp <- framework_FH(combined_data = data_tmp, fixed = framework$formula,
                                   vardir = vardir, domains = framework$domains,
@@ -583,34 +583,34 @@ chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, tr
     sigmau2_tmp <- wrapper_estsigmau2(framework = framework_tmp, method = method,
                                       interval = interval)
     jack_sigmau2[domain] <- sigmau2_tmp
-    
+
     Vi_tmp <- 1/(sigmau2_tmp + framework$vardir)
     # Shrinkage factor
     Bd_tmp <- framework$vardir/(sigmau2_tmp + framework$vardir)
-    
+
     g1_tmp <- rep(0, framework$m)
     for (d_tmp in 1:framework$m) {
       g1_tmp[d_tmp] <- framework$vardir[d_tmp] * (1 - Bd_tmp[d_tmp])
     }
-    
+
     Nenner_tmp <- rep(0, framework$m)
     for (d_tmp in 1:framework$m) {
-      Nenner_tmp[d_tmp] <- (framework$model_X[d_tmp,] %*% framework$model_X[d_tmp,]) / 
+      Nenner_tmp[d_tmp] <- (framework$model_X[d_tmp,] %*% framework$model_X[d_tmp,]) /
         (framework$vardir[d_tmp] + sigmau2_tmp)
     }
-    
+
     g2_tmp <- rep(0, framework$m)
     for (d_tmp in 1:framework$m) {
       g2_tmp[d_tmp] <- (Bd_tmp[d_tmp])^2 * framework$model_X[d_tmp,] %*% framework$model_X[d_tmp,] * (sum(Nenner_tmp))^(-1)
     }
-    
+
     #G1
     diff_jack_g1[, paste0(domain)] <- g1_tmp - g1
-    # negative Werte koennen erhalten werden, wenn diff_jack_g1 sehr groß ist
-    
+    # negative Werte koennen erhalten werden, wenn diff_jack_g1 sehr gross ist
+
     #G1
     diff_jack_g2[, paste0(domain)] <- g1_tmp + g2_tmp - (g1 + g2)
-    
+
     # Standard EBLUP
     framework_insample <- framework_FH(combined_data = data_insample, fixed = framework$formula,
                                        vardir = vardir, domains = framework$domains,
@@ -620,71 +620,71 @@ chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, tr
                           combined_data = data_insample)
     diff_jack_eblups[, paste0(domain)] <- eblup_tmp$EBLUP_data$EBLUP - eblup$EBLUP_data$EBLUP[eblup$EBLUP_data$ind == 0]
   }
-  
+
   w_u  <- c()
   v_wj <- c()
-  
+
   for(i in 1:nrow(framework$model_X)){
     w_u[i] <- 1 - t(framework$model_X[i,]) %*% solve(t(framework$model_X) %*% framework$model_X) %*% framework$model_X[i,]
     v_wj[i] <- w_u[i] * (jack_sigmau2[i] - sigmau2) * (jack_sigmau2[i] - sigmau2)
   }
-  
+
   jack_mse <- g1 - ((m - 1)/m) * rowSums(diff_jack_g1) + ((m - 1)/m) * rowSums(diff_jack_eblups^2)
   jack_mse_weighted <- g1 + g2 - ((m - 1)/m) * rowSums(diff_jack_g2) + ((m - 1)/m) * rowSums(diff_jack_eblups^2)
-  
+
   jack_mse <- g1 - w_u * rowSums(diff_jack_g1) + w_u * rowSums(diff_jack_eblups^2)
   jack_mse_weighted <- g1 + g2 - w_u * rowSums(diff_jack_g2) + w_u * rowSums(diff_jack_eblups^2)
-  
-  
+
+
   # bias correction for negative values:
-  
+
   neg_values <- which(jack_mse_weighted < 0)
-  
+
   jack_mse_weighted_neg <- c()
-  
+
   if (length(neg_values) >0 ) {
-    
+
     Sig_d<- (sigmau2 + framework$vardir)* diag(m)
     Sig_d_inv <- solve(Sig_d)
     L_d  <- framework$vardir/((sigmau2 + framework$vardir)^2) * diag(m)
     b_wj <- w_u * (jack_sigmau2 - sigmau2)
-    
+
     # bias fuer REML ist NULL (nur fuer REML durchfuehrbar)
-    app_bias_correction <- 
+    app_bias_correction <-
       sum(b_wj) * (framework$vardir^2 / (framework$vardir + sigmau2)^2) - #ueberprueft
       diag(L_d %*% Sig_d %*% t(L_d) * sum(v_wj))
-    
-    jack_mse_weighted_neg <- g1 + g2 + w_u * rowSums(diff_jack_eblups^2) - app_bias_correction 
+
+    jack_mse_weighted_neg <- g1 + g2 + w_u * rowSums(diff_jack_eblups^2) - app_bias_correction
   }
-  
+
   for(i in 1:m){
     if(i %in% neg_values){
       jack_mse_weighted[i] <- jack_mse_weighted_neg[i]
     }
   }
-  
-  jack_mse_weighted 
-  
+
+  jack_mse_weighted
+
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
   MSE_data$Var <- NA
   MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
-  
+
   # Jackknife MSE
   MSE_data$MSE[framework$obs_dom == TRUE] <- jack_mse_weighted
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
-  
-  
+
+
   if (!all(framework$obs_dom == TRUE)) {
     MSE_data$MSE[framework$obs_dom == FALSE] <- NA
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
-    
+
     cat("Please note that the jackknife MSE is only available for in-sample
         domains.")
   }
-  
+
   mse_out <- list(MSE_data = MSE_data,
                   MSE_method = "jackknife weighted")
-  
+
   return(mse_out)
 }
 
@@ -1005,8 +1005,8 @@ boot_sugasawa2 <- function(sigmau2, vardir, combined_data, framework,
     # Calculate g2 following step 3
     g2b[b, ] = (EBE - BE)^2
   }
-  
-  
+
+
 
   # Calculate MSE following equation 2.7
   mse = 2 * g1(m = m, X = X, vardir = vardir, sigmau2 = sigmau2, eblup = eblup,
@@ -1053,9 +1053,9 @@ wrapper_MSE <- function(framework, combined_data, sigmau2, vardir, eblup,
   } else if (MSE == "jackknife_w"){
     chen_weighted_jackknife(framework = framework, combined_data = combined_data,
                             sigmau2 = sigmau2, eblup = eblup, vardir = vardir,
-                            transformation = transformation, method = method, 
+                            transformation = transformation, method = method,
                             interval = interval)
   }
-  
+
   return(MSE_data)
 }

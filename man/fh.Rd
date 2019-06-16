@@ -2,7 +2,7 @@
 % Please edit documentation in R/FH.R
 \name{fh}
 \alias{fh}
-\title{Function for Fay-Herriot model}
+\title{Standard Fay-Herriot model for disaggregated indicators}
 \usage{
 fh(fixed, vardir, combined_data, domains = NULL, method = "reml",
   interval = c(0, 1000), transformation = "no", eff_smpsize = NULL,
@@ -67,5 +67,11 @@ confidence intervals.}
 fitted FH model.
 }
 \description{
-This function conducts the estimation of a Fay-Herriot model.
+Function \code{fh} estimates indicators using the Fay-Herriot approach by
+\cite{Fay and Herriot (1979)}. Point estimates of indicators are
+empirical best linear unbiased predictors (EBLUPs). Additionally, mean squared
+error (MSE) estimation can be conducted which depends on the chosen estimation
+approach for the variance of the random effect. For this estimation, six different
+approaches are provided (see also \code{method}). Three different transformation
+types for the dependent variable can be chosen.
 }

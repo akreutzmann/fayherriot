@@ -1,6 +1,12 @@
-#' Function for Fay-Herriot model
+#' Standard Fay-Herriot model for disaggregated indicators
 #'
-#' This function conducts the estimation of a Fay-Herriot model.
+#' Function \code{fh} estimates indicators using the Fay-Herriot approach by
+#' \cite{Fay and Herriot (1979)}. Point estimates of indicators are
+#' empirical best linear unbiased predictors (EBLUPs). Additionally, mean squared
+#' error (MSE) estimation can be conducted which depends on the chosen estimation
+#' approach for the variance of the random effect. For this estimation, six different
+#' approaches are provided (see also \code{method}). Three different transformation
+#' types for the dependent variable can be chosen.
 #'
 #' @param fixed a two-sided linear formula object describing the
 #' fixed-effects part of the nested error linear regression model with the
@@ -104,7 +110,8 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                              std_real_residuals = eblup$std_real_res,
                              gamma = Gamma,
                              model_select = criteria),
-                framework = framework[c("direct", "vardir", "m", "M")],
+                framework = framework[c("direct", "vardir", "N_dom_smp",
+                                        "N_dom_unobs")],
                 transformation = transformation,
                 method = list(method = method,
                               MSE_method = MSE_data$MSE_method),
@@ -137,7 +144,8 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                              std_real_residuals = eblup$std_real_res[, 1],
                              gamma = Gamma,
                              model_select = criteria),
-                framework = framework[c("direct", "vardir", "m", "M")],
+                framework = framework[c("direct", "vardir", "N_dom_smp",
+                                        "N_dom_unobs")],
                 transformation = transformation,
                 method = list(method = method,
                               MSE_method = result_data$MSE_method),
@@ -146,7 +154,7 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                successful_bootstraps = NULL)
   }
 
-  class(out) <- c("fh", "emdi")
+  class(out) <- c("emdi", "model", "fh")
 
   return(out)
 

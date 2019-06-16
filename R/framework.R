@@ -35,10 +35,17 @@ framework_FH <- function(combined_data, fixed, vardir, domains,
   # Number of areas
   m <- length(direct)
   M <- length(combined_data[[paste(lhs(fixed))]])
+  # Number of out-of-sample domains
+  N_dom_unobs <- M - m
   # Number of covariates
   p <- ncol(model_X)
 
+
+
+
   framework_out <- list(obs_dom = obs_dom,
+                        N_dom_smp = m,
+                        N_dom_unobs = N_dom_unobs,
                         data = data,
                         formula = fixed,
                         direct = direct,
