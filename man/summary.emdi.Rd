@@ -22,10 +22,10 @@ equivalent to \code{N_dom_unobs} (see \code{\link{emdiObject}}).}
              (see \code{\link{emdiObject}}).}
 \item{size_smp}{number of units in sample equivalent to \code{N_smp}
 (see \code{\link{emdiObject}}).}
-\item{size_pop}{if model-based estimation, number of units in population equivalent to \code{N_pop}
-(see \code{\link{emdiObject}}).}
+\item{size_pop}{if empirical best prediction, number of units in population
+equivalent to \code{N_pop} (see \code{\link{emdiObject}}).}
 \item{size_dom}{a data frame with rows Sample_domains and Population_domains
-(if model-based estimation) representing summary statistics of the sample
+(if ebp) representing summary statistics of the sample
 sizes across domains of sample and population data, respectively.}
 \item{transform}{if model-based estimation, a data frame with columns
                  Transformation, Method, Optimal_lambda and Shift_parameter representing the
@@ -39,11 +39,13 @@ sizes across domains of sample and population data, respectively.}
                  \code{\link{skewness}} and \code{\link{kurtosis}} are from
                  the package \pkg{moments}. Details for the Shapiro-Wilks-Test
                  are provided by \code{\link{shapiro.test}}.}
-\item{icc}{if model-based estimation, the value of the intraclass coefficient.}
-\item{coeff_determ}{if model-based estimation, a data frame with columns
+\item{icc}{if empirical best prediction, the value of the intraclass coefficient.}
+\item{coeff_determ}{if empirical best prediction, a data frame with columns
                     Marginal_R2 and Conditional_R2 representing two R2 measures
                     for linear mixed models from the \pkg{MuMIn} package
                     obtained by function \code{\link[MuMIn]{r.squaredGLMM}}.}
+\item{model}{if Fay-Herriot, a list with model components such as information
+criteria, coefficients of determination or variance and MSE estimation methods.}
 \item{call}{a list containing an image of the function call that produced the
             object.}
 }
@@ -69,6 +71,24 @@ my_min = function(y, threshold){min(y)}), na.rm = TRUE, cpus = 1)
 
 # Receive first overview
 summary(emdi_model)
+
+
+# Load aggregated data ------------------------------------------------------
+data("eusilcA_popAgg")
+data("eusilcA_smpAgg")
+
+# Combine sample and population data ----------------------------------------
+combined_data <- combine_data(pop_data = eusilcA_popAgg, pop_domains = "Domain",
+                              smp_data = eusilcA_smpAgg, smp_domains = "Domain")
+
+# Estimation of EBLUP means without transformation --------------------------
+
+# REML
+fh_reml <- fh(fixed = Mean ~ eqsize + cash + self_empl, vardir = "Var_Mean",
+              combined_data = combined_data, domains = "Domain",
+              method = "reml", interval = c(0, 100000000))
+# Receive first overview
+summary(fh_reml)
 }
 }
 \seealso{

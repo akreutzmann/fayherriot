@@ -15,10 +15,10 @@
 #'              (see \code{\link{emdiObject}}).}
 #' \item{size_smp}{number of units in sample equivalent to \code{N_smp}
 #' (see \code{\link{emdiObject}}).}
-#' \item{size_pop}{if model-based estimation, number of units in population equivalent to \code{N_pop}
-#' (see \code{\link{emdiObject}}).}
+#' \item{size_pop}{if empirical best prediction, number of units in population
+#' equivalent to \code{N_pop} (see \code{\link{emdiObject}}).}
 #' \item{size_dom}{a data frame with rows Sample_domains and Population_domains
-#' (if model-based estimation) representing summary statistics of the sample
+#' (if ebp) representing summary statistics of the sample
 #' sizes across domains of sample and population data, respectively.}
 #' \item{transform}{if model-based estimation, a data frame with columns
 #'                  Transformation, Method, Optimal_lambda and Shift_parameter representing the
@@ -32,11 +32,13 @@
 #'                  \code{\link{skewness}} and \code{\link{kurtosis}} are from
 #'                  the package \pkg{moments}. Details for the Shapiro-Wilks-Test
 #'                  are provided by \code{\link{shapiro.test}}.}
-#' \item{icc}{if model-based estimation, the value of the intraclass coefficient.}
-#' \item{coeff_determ}{if model-based estimation, a data frame with columns
+#' \item{icc}{if empirical best prediction, the value of the intraclass coefficient.}
+#' \item{coeff_determ}{if empirical best prediction, a data frame with columns
 #'                     Marginal_R2 and Conditional_R2 representing two R2 measures
 #'                     for linear mixed models from the \pkg{MuMIn} package
 #'                     obtained by function \code{\link[MuMIn]{r.squaredGLMM}}.}
+#' \item{model}{if Fay-Herriot, a list with model components such as information
+#' criteria, coefficients of determination or variance and MSE estimation methods.}
 #' \item{call}{a list containing an image of the function call that produced the
 #'             object.}
 #' @seealso \code{\link{emdiObject}}, \code{\link{direct}}, \code{\link{ebp}},
@@ -59,6 +61,24 @@
 #'
 #' # Receive first overview
 #' summary(emdi_model)
+#'
+#'
+#' # Load aggregated data ------------------------------------------------------
+#' data("eusilcA_popAgg")
+#' data("eusilcA_smpAgg")
+#'
+#' # Combine sample and population data ----------------------------------------
+#' combined_data <- combine_data(pop_data = eusilcA_popAgg, pop_domains = "Domain",
+#'                               smp_data = eusilcA_smpAgg, smp_domains = "Domain")
+#'
+#' # Estimation of EBLUP means without transformation --------------------------
+#'
+#' # REML
+#' fh_reml <- fh(fixed = Mean ~ eqsize + cash + self_empl, vardir = "Var_Mean",
+#'               combined_data = combined_data, domains = "Domain",
+#'               method = "reml", interval = c(0, 100000000))
+#' # Receive first overview
+#' summary(fh_reml)
 #' }
 #' @export
 #' @importFrom moments skewness kurtosis
@@ -160,6 +180,7 @@ summary.emdi <- function(object, ...) {
                      size_smp     = smp_size,
                      size_pop     = pop_size,
                      size_dom     = sizedom_smp_pop,
+                     smp_size_tab = NULL,
                      transform    = transform_method,
                      normality    = norm,
                      icc          = icc_mixed,
@@ -178,13 +199,22 @@ summary.emdi <- function(object, ...) {
     smp_size_dom <-
       rbind(Sample_domains = summary(as.numeric(smp_size_tab)))
 
-    sum_emdi <- list(in_smp       = N_dom_smp,
+    sum_emdi <- list(out_of_smp   = NULL,
+                     in_smp       = N_dom_smp,
                      size_smp     = smp_size,
+                     size_pop     = NULL,
                      size_dom     = smp_size_dom,
-                     call         = call_emdi,
-                     smp_size_tab = smp_size_tab
+                     smp_size_tab = smp_size_tab,
+                     transform    = NULL,
+                     normality    = NULL,
+                     icc          = NULL,
+                     coeff_determ = NULL,
+                     model        = NULL,
+                     call         = call_emdi
     )
+
   } else if (inherits(object, "fh")) {
+
     call_emdi <- object$call
 
     N_dom_unobs <- object$framework$N_dom_unobs
@@ -255,13 +285,20 @@ summary.emdi <- function(object, ...) {
 
     sum_emdi <- list(out_of_smp = object$framework$N_dom_unobs,
                      in_smp = object$framework$N_dom_smp,
-                     transform = transform_data,
-                     normality = normality,
-                     variance_estimation_method = object$method$method,
-                     MSE_method = object$method$MSE_method,
-                     coefficients = object$model$coefficients,
-                     sigmau2 = object$model$sigmau2,
-                     model_select = object$model$model_select,
+                     size_smp     = NULL,
+                     size_pop     = NULL,
+                     size_dom     = NULL,
+                     smp_size_tab = NULL,
+                     transform    = transform_data,
+                     normality    = normality,
+                     icc          = NULL,
+                     coeff_determ = NULL,
+                     model        = object$model,
+                     #variance_estimation_method = object$method$method,
+                     #MSE_method = object$method$MSE_method,
+                     #coefficients = object$model$coefficients,
+                     #sigmau2 = object$model$sigmau2,
+                     #model_select = object$model$model_select,
                      call = object$call)
   }
 
@@ -332,19 +369,19 @@ print.summary.emdi <- function(x,...) {
     cat("Out-of-sample domains: ", x$out_of_smp,
         "\n")
     cat("\n")
-    cat("Variance estimation method: ", x$variance_estimation_method,
+    cat("Variance estimation method: ", x$method$method,
         "\n")
-    cat("Estimated variance of random effects: ", x$sigmau2,
+    cat("Estimated variance of random effects: ", x$model$sigmau2,
         "\n")
-    cat("MSE method: ", x$MSE_method, "\n")
+    cat("MSE method: ", x$method$MSE_method, "\n")
     cat("\n")
     cat("Coefficients:\n")
-    print(x$coefficients)
+    print(x$model$coefficients)
     #cat("\n")
     #cat("Signif. codes: ", x$legend, "\n")
     cat("\n")
     cat("Explanatory measures:\n")
-    print(x$model_select)
+    print(x$model$model_select)
     cat("\n")
     cat("Residual diagnostics:\n")
     print(x$normality)
