@@ -32,11 +32,11 @@ prasad_rao <- function(framework, sigmau2, combined_data) {
   }
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
 
   # Small area MSE
-  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
 
@@ -56,7 +56,7 @@ prasad_rao <- function(framework, sigmau2, combined_data) {
       mse_out[d_out] <- sigmau2 + h[d_out]
     }
 
-    MSE_data$MSE[framework$obs_dom == FALSE] <- mse_out
+    MSE_data$FH_MSE[framework$obs_dom == FALSE] <- mse_out
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
   }
 
@@ -89,11 +89,11 @@ datta_lahiri <- function(framework, sigmau2, combined_data) {
   }
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
 
   # Small area MSE
-  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
   if (!all(framework$obs_dom == TRUE)) {
@@ -112,7 +112,7 @@ datta_lahiri <- function(framework, sigmau2, combined_data) {
       mse_out[d_out] <- sigmau2 + b + h[d_out]
     }
 
-    MSE_data$MSE[framework$obs_dom == FALSE] <- mse_out
+    MSE_data$FH_MSE[framework$obs_dom == FALSE] <- mse_out
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
   }
 
@@ -125,7 +125,7 @@ li_lahiri <- function(framework, sigmau2, combined_data, method) {
 
     prasad_rao <- prasad_rao(framework = framework, sigmau2 = sigmau2,
                              combined_data = combined_data)
-    mse <- prasad_rao$MSE[framework$obs_dom == TRUE]
+    mse <- prasad_rao$FH_MSE[framework$obs_dom == TRUE]
     X <- framework$model_X
     psi <- matrix(c(framework$vardir), framework$m, 1)
     Y <- matrix(c(framework$direct), framework$m, 1)
@@ -157,12 +157,12 @@ li_lahiri <- function(framework, sigmau2, combined_data, method) {
     }
 
     MSE_data <- prasad_rao
-    MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+    MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
     MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
 
     if (!all(framework$obs_dom == TRUE)) {
-      MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+      MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
       MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
     cat("Please note that only for in-sample-domains a correction following
@@ -207,12 +207,12 @@ yoshimori_lahiri <- function(framework, sigmau2, combined_data, method) {
   }
 
   MSE_data <- prasad_rao
-  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
 
   if (!all(framework$obs_dom == TRUE)) {
-    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
     cat("Please note that only for in-sample-domains a correction following
@@ -269,13 +269,13 @@ slud_maiti <- function(framework, sigmau2, eblup, combined_data) {
 
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
-  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
   if (!all(framework$obs_dom == TRUE)) {
-    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
     cat("Please note that a MSE is only returned for in-sample domains.
@@ -421,8 +421,8 @@ boot_arcsin <- function(sigmau2, vardir, combined_data, framework,
     Bi.tot <- as.numeric(Di) / (sigmau2 + as.numeric(Di))
 
 
-    Li <- (eblup$EBLUP_data$EBLUP + qi * sqrt(Di * (1 - Bi.tot)))[,1]
-    Ui <- (eblup$EBLUP_data$EBLUP + qi * sqrt(Di * (1 - Bi.tot)))[,2]
+    Li <- (eblup$EBLUP_data$FH + qi * sqrt(Di * (1 - Bi.tot)))[,1]
+    Ui <- (eblup$EBLUP_data$FH + qi * sqrt(Di * (1 - Bi.tot)))[,2]
 
     ### Truncation
     Li[Li < 0] <- 0
@@ -501,16 +501,16 @@ jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transforma
 
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
 
   # Jackknife MSE
-  MSE_data$MSE[framework$obs_dom == TRUE] <- jack_mse
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- jack_mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
 
   if (!all(framework$obs_dom == TRUE)) {
-    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
     cat("Please note that the jackknife MSE is only available for in-sample
@@ -666,16 +666,16 @@ chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, tr
   jack_mse_weighted
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
 
   # Jackknife MSE
-  MSE_data$MSE[framework$obs_dom == TRUE] <- jack_mse_weighted
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- jack_mse_weighted
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
 
 
   if (!all(framework$obs_dom == TRUE)) {
-    MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+    MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
     MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
     cat("Please note that the jackknife MSE is only available for in-sample
@@ -838,13 +838,13 @@ boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
   mse <- g1_bc + g2_star_exp
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
 
   # Small area MSE
-  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
-  MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+  MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
   MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
   MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc
@@ -1020,13 +1020,13 @@ boot_sugasawa2 <- function(sigmau2, vardir, combined_data, framework,
 
 
   MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Var <- NA
-  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+  MSE_data$Direct_Var <- NA
+  MSE_data$Direct_Var[framework$obs_dom == TRUE] <- framework$vardir
 
   # Small area MSE
-  MSE_data$MSE[framework$obs_dom == TRUE] <- mse
+  MSE_data$FH_MSE[framework$obs_dom == TRUE] <- mse
   MSE_data$ind[framework$obs_dom == TRUE] <- 0
-  MSE_data$MSE[framework$obs_dom == FALSE] <- NA
+  MSE_data$FH_MSE[framework$obs_dom == FALSE] <- NA
   MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
   MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc

@@ -138,7 +138,7 @@ plot.emdi <- function(x,
                       range = NULL, ...){
 
 
-  #plot_check(x = x, label = label, color = color, cooks = cooks, range = range)
+  plot_check(x = x, label = label, color = color, cooks = cooks, range = range)
   plotList <- vector(mode = "list", length = 5)
   plotList <- lapply(plotList, function(x) NA)
   names(plotList) <- c("qq_plots", "density_res","density_ran",

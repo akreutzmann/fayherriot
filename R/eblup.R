@@ -34,11 +34,11 @@ eblup_FH <- function(framework, sigmau2, combined_data) {
   std_real_res <- real_res / sqrt(framework$vardir)
 
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])
-  EBLUP_data$direct <- NA
-  EBLUP_data$direct[framework$obs_dom == TRUE] <- framework$direct
+  EBLUP_data$Direct <- NA
+  EBLUP_data$Direct[framework$obs_dom == TRUE] <- framework$direct
 
   if (all(framework$obs_dom == TRUE)) {
-    EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- framework$model_X%*%Beta.hat + D%*%u.hat
+    EBLUP_data$FH[framework$obs_dom == TRUE] <- framework$model_X%*%Beta.hat + D%*%u.hat
     EBLUP_data$ind[framework$obs_dom == TRUE] <- 0
   } else {
     # Prediction
@@ -52,8 +52,8 @@ eblup_FH <- function(framework, sigmau2, combined_data) {
     pred_y <- pred_X %*% Beta.hat
 
     # Small area mean
-    EBLUP_data$EBLUP[framework$obs_dom == TRUE] <- framework$model_X%*%Beta.hat + D%*%u.hat
-    EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- pred_y
+    EBLUP_data$FH[framework$obs_dom == TRUE] <- framework$model_X%*%Beta.hat + D%*%u.hat
+    EBLUP_data$FH[framework$obs_dom == FALSE] <- pred_y
     EBLUP_data$ind[framework$obs_dom == TRUE] <- 0
     EBLUP_data$ind[framework$obs_dom == FALSE] <- 1
   }
