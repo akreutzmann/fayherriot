@@ -10,9 +10,11 @@ mse_emdi <- function(object, indicator = "all", CV = FALSE) {
          define custom indicators and generate a new emdi object. See also help(ebp).')
   }
 
+
   # Calculation of CVs
   if(inherits(object, "fh")) {
-    object$MSE <- object$MSE[, c("Domain", "Direct_Var", "FH_MSE")]
+    object$MSE <- object$MSE[, c("Domain", "Direct", "FH")]
+    object$ind <- object$ind[, c("Domain", "Direct", "FH")]
   }
   all_cv <- sqrt(object$MSE[,-1]) / object$ind[,-1]
 
@@ -35,11 +37,11 @@ mse_emdi <- function(object, indicator = "all", CV = FALSE) {
     ind_cv <- cbind(Domain = object$MSE[,1], all_cv)
     ind_name <- "All indicators"
   } else if (any(indicator == "fh") || any(indicator == "FH" )) {
-    ind <- object$MSE[, c("Domain", "FH_MSE")]
+    ind <- object$MSE[, c("Domain", "FH")]
     ind_cv <- cbind(Domain = object$MSE[,1], all_cv)
     ind_name <- "Fay-Herriot estimates"
   } else if (any(indicator == "Direct") || any(indicator == "direct" )) {
-    ind <- object$MSE[, c("Domain", "Direct_Var")]
+    ind <- object$MSE[, c("Domain", "Direct")]
     ind_cv <- cbind(Domain = object$MSE[,1], all_cv)
     ind_name <- "Direct estimates used in Fay-Herriot approach"
   } else {
