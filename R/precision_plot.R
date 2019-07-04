@@ -1,5 +1,5 @@
-precision_plot <- function(direct, model, indicators, MSE = TRUE, CV = FALSE,
-                           label, color, shape, line_type, gg_theme) {
+precision_plot <- function(model, direct = NULL, indicators = "all", MSE = TRUE,
+                           CV = FALSE, label, color, shape, line_type, gg_theme) {
 
   plotList <- vector(mode = "list", length = 2)
   names(plotList) <- c("ordered", "boxplot")
