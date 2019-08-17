@@ -83,7 +83,7 @@ compare_plot_ebp <- function(direct, model, indicator = "all", label = "orig",
   Data$smp_size <- as.numeric(smp_size)[matcher]
   selected_indicators <- selected_model[selected_model %in% selected_direct]
 
-  compare_plots(object = Data, selected_indicators = selected_indicators,
+  compare_plots(object = Data, type = "unit", selected_indicators = selected_indicators,
                 MSE = FALSE, CV = FALSE, label = label, color = color,
                 shape = shape, line_type = line_type, gg_theme = gg_theme)
 
@@ -149,7 +149,7 @@ compare_plot_fh <- function(direct, model, indicator = "all", MSE = FALSE, CV = 
 
   #compare_plot_check2(ind_direct, ind_model)
 
-  compare_plots(object = Data, selected_indicators = selected_indicators,
+  compare_plots(object = Data, type = "area", selected_indicators = selected_indicators,
                 MSE = MSE, CV = CV, label = label, color = color,
                 shape = shape, line_type = line_type, gg_theme = gg_theme)
 
@@ -201,75 +201,193 @@ compare_plot.emdi <- function(direct, model = NULL, indicator = "all",
 
 
 
-define_evallabel <- function(label, indi){
+define_evallabel <- function(type, label, indi){
   if (!inherits(label, "list")) {
     if (label == "orig") {
-      label <- list(scatter = c(title = indi,
-                               y_lab = "Model-based",
-                               x_lab = "Direct"),
-                    line = c(title = indi,
+
+      if (type == "unit") {
+        label <- list(scatter = c(title = indi,
+                                  y_lab = "Model-based",
+                                  x_lab = "Direct"),
+                      line = c(title = indi,
                                y_lab = "Value",
-                               x_lab = "Domain (ordered by sample size)"))
+                               x_lab = "Domain (ordered by sample size)"),
+                      boxplot_MSE = c(title = indi,
+                               y_lab = "Value",
+                               x_lab = "Domain (ordered by sample size)"),
+                      ordered_MSE = c(title = indi,
+                               y_lab = "Value",
+                               x_lab = "Domain (ordered by sample size)"),
+                      boxplot_CV = c(title = indi,
+                                  y_lab = "Value",
+                                  x_lab = "Domain (ordered by sample size)"),
+                      ordered_CV = c(title = indi,
+                                  y_lab = "Value",
+                                  x_lab = "Domain (ordered by sample size)"))
+      } else if (type == "area") {
+        label <- list(scatter = c(title = indi,
+                                  y_lab = "Model-based",
+                                  x_lab = "Direct"),
+                      line = c(title = indi,
+                               y_lab = "Value",
+                               x_lab = "Domain (ordered by increasing MSE of Direct)"),
+                      boxplot_MSE = c(title = indi,
+                                      y_lab = "",
+                                      x_lab = "MSE"),
+                      ordered_MSE = c(title = indi,
+                                      y_lab = "MSE",
+                                      x_lab = "Domain (ordered by increasing MSE of Direct)"),
+                      boxplot_CV = c(title = indi,
+                                     y_lab = "CV",
+                                     x_lab = ""),
+                      ordered_CV = c(title = indi,
+                                     y_lab = "Value",
+                                     x_lab = "Domain (ordered by increasing CV of Direct)"))
+      }
+
     } else if (label == "blank") {
       label <- list(scatter = c(title = "",
                                y_lab = "",
                                x_lab = ""),
                     line = c(title = "",
                                y_lab = "",
-                               x_lab = ""))
+                               x_lab = ""),
+                    boxplot_MSE = c(title = "",
+                             y_lab = "",
+                             x_lab = ""),
+                    ordered_MSE = c(title = "",
+                             y_lab = "",
+                             x_lab = ""),
+                    boxplot_CV = c(title = "",
+                             y_lab = "",
+                             x_lab = ""),
+                    ordered_CV = c(title = "",
+                             y_lab = "",
+                             x_lab = ""))
     } else if (label == "no_title") {
-      label <- list(scatter = c(title = "",
-                                y_lab = "Model-based",
-                                x_lab = "Direct"),
-                    line = c(title = "",
-                             y_lab = "Value",
-                             x_lab = "Domain (ordered by sample size)"))
-    }
 
-  } else if (inherits(label, "list")) {
-
-    if (!any(names(label) %in% c("scatter", "line"))) {
-      stop("List elements must have following names even though not
-           all must be included: scatter and line Every list element must
-           have the elements title, y_lab and x_lab.")
-    }
-    for (i in names(label)) {
-      if (!all(names(label[[i]]) == c("title", "y_lab", "x_lab"))) {
-        stop("Every list element must have the elements title,
-             y_lab and x_lab in this order.")
+      if (type == "unit") {
+        label <- list(scatter = c(title = "",
+                                  y_lab = "Model-based",
+                                  x_lab = "Direct"),
+                      line = c(title = "",
+                               y_lab = "Value",
+                               x_lab = "Domain (ordered by sample size)"),
+                      boxplot_MSE = c(title = "",
+                                      y_lab = "Value",
+                                      x_lab = "Domain (ordered by sample size)"),
+                      ordered_MSE = c(title = "",
+                                      y_lab = "Value",
+                                      x_lab = "Domain (ordered by sample size)"),
+                      boxplot_CV = c(title = "",
+                                     y_lab = "Value",
+                                     x_lab = "Domain (ordered by sample size)"),
+                      ordered_CV = c(title = "",
+                                     y_lab = "Value",
+                                     x_lab = "Domain (ordered by sample size)"))
+      } else if (type == "area") {
+        label <- list(scatter = c(title = "",
+                                  y_lab = "Model-based",
+                                  x_lab = "Direct"),
+                      line = c(title = "",
+                               y_lab = "Value",
+                               x_lab = "Domain (ordered by increasing MSE of Direct)"),
+                      boxplot_MSE = c(title = "",
+                                      y_lab = "",
+                                      x_lab = "MSE"),
+                      ordered_MSE = c(title = "",
+                                      y_lab = "MSE",
+                                      x_lab = "Domain (ordered by increasing MSE of Direct)"),
+                      boxplot_CV = c(title = "",
+                                     y_lab = "CV",
+                                     x_lab = ""),
+                      ordered_CV = c(title = "",
+                                     y_lab = "Value",
+                                     x_lab = "Domain (ordered by increasing CV of Direct)"))
       }
-      }
 
-    orig_label <- list(scatter = c(title = indi,
-                                   y_lab = "Model-based",
-                                   x_lab = "Direct"),
-                       line = c(title = indi,
-                                y_lab = "Value",
-                                x_lab = "Domain (ordered by sample size)"))
-
-    if (any(names(label) == "scatter")) {
-      label$scatter <- label$scatter
-    } else {
-      label$scatter <- orig_label$scatter
     }
-    if (any(names(label) == "line")) {
-      label$line <- label$line
-    } else {
-      label$line <- orig_label$line
-    }
-      }
 
-  if (any(!(names(label) %in%  c("scatter", "line")))) {
-    warning("One or more list elements are not called scatter or line. The
-             changes are for this/these element(s) is/are not done. Instead the
-            original labels are used.")
   }
+
+  #else if (inherits(label, "list")) {
+
+  #  if (!any(names(label) %in% c("scatter", "line"))) {
+  #    stop("List elements must have following names even though not
+  #         all must be included: scatter and line Every list element must
+  #         have the elements title, y_lab and x_lab.")
+  #  }
+  #  for (i in names(label)) {
+  #    if (!all(names(label[[i]]) == c("title", "y_lab", "x_lab"))) {
+  #      stop("Every list element must have the elements title,
+  #           y_lab and x_lab in this order.")
+  #    }
+  #    }
+
+  #  if (type == "unit") {
+  #    orig_label <- list(scatter = c(title = indi,
+  #                              y_lab = "Model-based",
+  #                              x_lab = "Direct"),
+  #                  line = c(title = indi,
+  #                           y_lab = "Value",
+  #                           x_lab = "Domain (ordered by sample size)"),
+  #                  boxplot_MSE = c(title = indi,
+  #                                  y_lab = "Value",
+  #                                  x_lab = "Domain (ordered by sample size)"),
+  #                  ordered_MSE = c(title = indi,
+  #                                  y_lab = "Value",
+  #                                  x_lab = "Domain (ordered by sample size)"),
+  #                  boxplot_CV = c(title = indi,
+  #                                 y_lab = "Value",
+  #                                 x_lab = "Domain (ordered by sample size)"),
+  #                  ordered_CV = c(title = indi,
+  #                                 y_lab = "Value",
+  #                                 x_lab = "Domain (ordered by sample size)"))
+  #  } else if (type == "area") {
+  #    orig_label <- list(scatter = c(title = indi,
+  #                              y_lab = "Model-based",
+  #                              x_lab = "Direct"),
+  #                  line = c(title = indi,
+  #                           y_lab = "Value",
+  #                           x_lab = "Domain (ordered by sample size)"),
+  #                  boxplot_MSE = c(title = indi,
+  #                                  y_lab = "",
+  #                                  x_lab = "MSE"),
+  #                  ordered_MSE = c(title = indi,
+  #                                  y_lab = "MSE",
+  #                                  x_lab = "Domain (ordered by increasing MSE of Direct)"),
+  #                  boxplot_CV = c(title = indi,
+  #                                 y_lab = "CV",
+  #                                 x_lab = ""),
+  #                  ordered_CV = c(title = indi,
+  #                                 y_lab = "Value",
+  #                                 x_lab = "Domain (ordered by increasing CV of Direct)"))
+  #  }
+
+
+  #  if (any(names(label) == "scatter")) {
+  #    label$scatter <- label$scatter
+  #  } else {
+   #   label$scatter <- orig_label$scatter
+  #  }
+  #  if (any(names(label) == "line")) {
+  #    label$line <- label$line
+  #  } else {
+  #    label$line <- orig_label$line
+  #  }
+  #    }
+
+  #if (any(!(names(label) %in%  c("scatter", "line")))) {
+  #  warning("One or more list elements are not called scatter or line. The
+  #           changes are for this/these element(s) is/are not done. Instead the
+  #          original labels are used.")
+  #}
 
   return(label)
     }
 
 
-compare_plots <- function(object, selected_indicators, MSE, CV, label, color,
+compare_plots <- function(object, type, selected_indicators, MSE, CV, label, color,
                           shape, line_type, gg_theme,...) {
 
 
@@ -282,15 +400,15 @@ compare_plots <- function(object, selected_indicators, MSE, CV, label, color,
     names(plotList) <- paste(rep(c("scatter", "line"), length(selected_indicators)),
                              rep(selected_indicators, each = 4), sep = "_")
   } else if (MSE == TRUE & CV == TRUE) {
-    plotList <- vector(mode = "list", length = length(selected_indicators) * 8)
+    plotList <- vector(mode = "list", length = length(selected_indicators) * 6)
     names(plotList) <- paste(rep(c("scatter", "line"), length(selected_indicators)),
-                             rep(selected_indicators, each = 8), sep = "_")
+                             rep(selected_indicators, each = 6), sep = "_")
   }
 
   #scatter line
   for (ind in selected_indicators) {
 
-    label_ind <- define_evallabel(label = label, indi = ind)
+    label_ind <- define_evallabel(type = type, label = label, indi = ind)
 
     data_tmp <- data.frame(Direct = object[, paste0(ind, "_Direct")],
                            Model_based = object[, paste0(ind, "_Model")],
@@ -352,28 +470,30 @@ compare_plots <- function(object, selected_indicators, MSE, CV, label, color,
       cat("Press [enter] to continue")
       line <- readline()
 
-      print((plotList[[paste("boxplot", "EBLUP", sep = "_")]] <- ggplot(data_shaped,
+      print((plotList[[paste("boxplot", "MSE", ind, sep = "_")]] <- ggplot(data_shaped,
                                                                         aes(x = Method, y = value,
                                                                             fill = Method)) +
                geom_boxplot() +
                coord_flip() +
-               labs(x = NULL, y = "MSE") +
+               labs(title = label_ind$boxplot_MSE["title"],
+                    x = label_ind$boxplot_MSE["x_lab"],
+                    y = label_ind$boxplot_MSE["y_lab"]) +
                scale_fill_manual(name = "Method",
                                  values = color)))
 
       cat("Press [enter] to continue")
       line <- readline()
 
-      data_shaped
-
-      print((plotList[[paste("ordered", "EBLUP", sep = "_")]] <- ggplot(data_shaped,
+      print((plotList[[paste("ordered", "MSE", ind, sep = "_")]] <- ggplot(data_shaped,
                                                                         aes(x = area,
                                                                             y = value,
                                                                             colour = Method)) +
-               geom_point() + labs(x = "Domain (sorted by increasing MSE of Direct)",
-                                   y = "MSE",
-                                   colour = "Method") +
-               scale_color_manual(values = color)))
+               geom_point(aes(color = Method, shape = Method)) +
+               labs(title = label_ind$ordered_MSE["title"],
+                                   x = label_ind$ordered_MSE["x_lab"],
+                                   y = label_ind$ordered_MSE["y_lab"]) +
+               scale_color_manual(values = color)) +
+        scale_shape_manual(values = c(shape[1], shape[2])))
     }
 
     if (CV == TRUE) {
@@ -392,12 +512,14 @@ compare_plots <- function(object, selected_indicators, MSE, CV, label, color,
       cat("Press [enter] to continue")
       line <- readline()
 
-      print((plotList[[paste("boxplot", "EBLUP", sep = "_")]] <- ggplot(data_shaped,
+      print((plotList[[paste("boxplot", "CV", ind, sep = "_")]] <- ggplot(data_shaped,
                                                                         aes(x = Method, y = value,
                                                                             fill = Method)) +
                geom_boxplot() +
                coord_flip() +
-               labs(x = NULL, y = "CV") +
+               labs(title = label_ind$boxplot_CV["title"],
+                    x = label_ind$boxplot_CV["x_lab"],
+                    y = label_ind$boxplot_CV["y_lab"]) +
                scale_fill_manual(name = "Method",
                                  values = color)))
 
@@ -406,14 +528,16 @@ compare_plots <- function(object, selected_indicators, MSE, CV, label, color,
 
       data_shaped
 
-      print((plotList[[paste("ordered", "EBLUP", sep = "_")]] <- ggplot(data_shaped,
+      print((plotList[[paste("ordered", "CV", ind, sep = "_")]] <- ggplot(data_shaped,
                                                                         aes(x = area,
                                                                             y = value,
                                                                             colour = Method)) +
-               geom_point() + labs(x = "Domain (sorted by increasing CV of Direct)",
-                                   y = "CV",
-                                   colour = "Method") +
-               scale_color_manual(values = color)))
+               geom_point(aes(color = Method, shape = Method)) +
+               labs(title = label_ind$ordered_CV["title"],
+                                   x = label_ind$ordered_CV["x_lab"],
+                                   y = label_ind$ordered_CV["y_lab"]) +
+               scale_color_manual(values = color))+
+        scale_shape_manual(values = c(shape[1], shape[2])))
     }
 
 

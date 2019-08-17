@@ -176,10 +176,9 @@ li_lahiri <- function(framework, sigmau2, combined_data, method) {
 
 yoshimori_lahiri <- function(framework, sigmau2, combined_data, method) {
 
-
   prasad_rao <- prasad_rao(framework = framework, sigmau2 = sigmau2,
                            combined_data = combined_data)
-  mse <- prasad_rao$MSE[framework$obs_dom == TRUE]
+  mse <- prasad_rao$FH[framework$obs_dom == TRUE]
   X <- framework$model_X
   psi <- matrix(c(framework$vardir), framework$m, 1)
   Y <- matrix(c(framework$direct), framework$m, 1)
