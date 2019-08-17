@@ -168,7 +168,8 @@ compare_plot_fh <- function(direct, model, indicator = "all", label = "orig",
 #' estimators for each selected indicator obtained by \code{\link[ggplot2]{ggplot}}.
 #' @export
 
-compare_plot.emdi <- function(direct, model, indicator = "all", label = "orig",
+compare_plot.emdi <- function(direct, model = NULL, indicator = "all",
+                              MSE = FALSE, CV = FALSE, label = "orig",
                             color = c("blue", "lightblue3"),
                             shape = c(16, 16), line_type = c("solid", "solid"),
                             gg_theme = NULL) {

@@ -4,7 +4,7 @@
 \alias{compare_plot.emdi}
 \title{Shows plots for the comparison of estimates}
 \usage{
-\method{compare_plot}{emdi}(direct, model, indicator = "all",
+\method{compare_plot}{emdi}(direct, model = NULL, indicator = "all",
   label = "orig", color = c("blue", "lightblue3"), shape = c(16, 16),
   line_type = c("solid", "solid"), gg_theme = NULL)
 }
