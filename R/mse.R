@@ -290,7 +290,7 @@ slud_maiti <- function(framework, sigmau2, eblup, combined_data) {
 analytical_mse <- function(framework, sigmau2, combined_data,
                            method) {
 
-    if (method == "sae_reml" | method == "reml") {
+    if (method == "reml") {
       MSE_data <- prasad_rao(framework = framework, sigmau2 = sigmau2,
                              combined_data = combined_data)
       MSE_method <- "Prasad_Rao"
@@ -433,6 +433,153 @@ boot_arcsin <- function(sigmau2, vardir, combined_data, framework,
 
     conf_int <- data.frame(Li = Li, Ui = Ui)
 }
+
+boot_arcsin_2 <- function(sigmau2, vardir, combined_data, framework,
+                          eblup, eblup_corr, B, method,
+                          interval, alpha) {
+
+
+  # Gonzales Bootstrap fuer arcsin
+  M <- framework$M
+  m <- framework$m
+  vardir <- framework$vardir
+  eff_smpsize <- framework$eff_smpsize
+  x <- framework$model_X
+
+  ### Bootstrap
+  in_sample <- framework$obs_dom == TRUE
+  out_sample <- framework$obs_dom == FALSE
+
+  # Ergebnissmatrixen
+  true_value_boot <- matrix(NA, ncol = B, nrow = M)
+  est_value_boot  <- matrix(NA, ncol = B, nrow = M)
+
+  for (b in 1:B){
+
+    #set.seed(b)
+
+    v_boot <- rnorm(M, 0, sqrt(sigmau2))
+    e_boot <- rnorm(m, 0, sqrt(vardir))
+
+    # Get covariates for all domains
+    pred_data_tmp <- combined_data
+    pred_data_tmp <- data.frame(pred_data_tmp, helper = rnorm(1,0,1))
+    lhs(framework$formula) <- quote(helper)
+    pred_data <- makeXY(formula = framework$formula, data = pred_data_tmp)
+
+    pred_X <- pred_data$x
+
+    Xbeta_boot <- pred_X %*% eblup$coefficients$coefficients
+
+    ## True Value for bootstraps
+    ## Truncation
+    true_value_boot_trans <- Xbeta_boot + v_boot
+    true_value_boot_trans[true_value_boot_trans < 0] <- 0
+    true_value_boot_trans[true_value_boot_trans > (pi / 2)] <- (pi / 2)
+
+    ## Back-transformation
+    ## true values without correction
+    true_value_boot[,b] <- (sin(true_value_boot_trans))^2
+
+    ystar_trans <- Xbeta_boot[in_sample] + v_boot[in_sample] + e_boot
+
+    ## Estimation of sigmau2_boot auf transformierter Ebene
+    framework2 <- framework
+    framework2$direct <- ystar_trans
+    sigmau2_boot <- wrapper_estsigmau2(framework = framework2, method = method,
+                                       interval = interval)
+
+    ## Computation of the coefficients'estimator (Bstim)
+    D <- diag(1, m)
+    V <- sigmau2_boot*D%*%t(D) + diag(as.numeric(vardir))
+    Vi <- solve(V)
+    Q <- solve(t(x)%*%Vi%*%x)
+    Beta.hat_boot <- Q%*%t(x)%*%Vi%*%ystar_trans
+
+    ## Computation of the EBLUP
+    res <- ystar_trans - c(x%*%Beta.hat_boot)
+    Sigma.u <- sigmau2_boot*D
+    u.hat <- Sigma.u%*%t(D)%*%Vi%*%res
+
+    ## Estimated Small area mean on transformed scale for the out and in sample values
+    est_mean_boot_trans <- x%*%Beta.hat_boot+D%*%u.hat
+    pred_out_boot_trans <- pred_X%*%Beta.hat_boot
+
+    est_value_boot_trans <- rep(NA, M)
+    est_value_boot_trans[in_sample] <- est_mean_boot_trans
+    est_value_boot_trans[out_sample]<- pred_out_boot_trans[out_sample]
+
+    gamma_trans <- as.numeric(vardir)/(sigmau2_boot + as.numeric(vardir))
+    est_value_boot_trans_var <- sigmau2_boot * gamma_trans
+    est_value_boot_trans_var_<- rep(0, M)
+    est_value_boot_trans_var_[in_sample] <- est_value_boot_trans_var
+
+    # backtransformation
+    int_value <- NULL
+    for (i in 1:M) {
+
+      if(in_sample[i] == T){
+        mu_dri <- est_value_boot_trans
+        # Get value of first domain
+        mu_dri <- mu_dri[i]
+
+        Var_dri <- est_value_boot_trans_var_
+        Var_dri <- as.numeric(Var_dri[i])
+
+        integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
+                                                            sd = sqrt(Var_dri))}
+
+        upper_bound <- min(mean(framework$direct) + 10 * sd(framework$direct),
+                           mu_dri + 100 * sqrt(Var_dri))
+        lower_bound <- max(mean(framework$direct) - 10 * sd(framework$direct),
+                           mu_dri - 100 * sqrt(Var_dri))
+
+        int_value <- c(int_value, integrate(integrand, lower = 0, upper = pi/2)$value)
+      }else{
+        int_value <- c(int_value, (sin(est_value_boot_trans[i]))^2)
+      }
+    }
+
+    est_value_boot[,b] <- int_value
+
+    print(b)
+  } # End of bootstrap runs
+
+  # KI
+  Li <- rep(NA, M)
+  Ui <- rep(NA, M)
+
+  for(ii in 1:M){
+    Li[ii] <- eblup_corr[ii] + quantile(est_value_boot[ii,] - true_value_boot[ii,], 0.025)
+    Ui[ii] <- eblup_corr[ii] + quantile(est_value_boot[ii,] - true_value_boot[ii,], 0.975)
+  }
+
+  conf_int <- data.frame(Li = Li, Ui = Ui)
+
+  Quality_MSE<-function(estimator, TrueVal, B){
+    RMSE<-rep(NA,dim(estimator)[1])
+    for(ii in 1:dim(estimator)[1]){
+      RMSE[ii]<-(1/B*sum(((estimator[ii,]-TrueVal[ii,]))^2))
+    }
+    RMSE
+  }
+
+  mse <- Quality_MSE(est_value_boot, true_value_boot, B)
+
+  MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
+  MSE_data$Var <- NA
+  MSE_data$Var[framework$obs_dom == TRUE] <- framework$vardir
+
+  # Small area MSE
+  MSE_data$MSE <- mse
+  MSE_data$ind[framework$obs_dom == TRUE] <- 0
+  MSE_data$ind[framework$obs_dom == FALSE] <- 1
+
+  return(list(conf_int, MSE_data))
+
+}
+
+
 
 jiang_jackknife <- function(framework, combined_data, sigmau2, eblup, transformation,
                             vardir, method, interval) {
@@ -687,176 +834,8 @@ chen_weighted_jackknife <- function(framework, combined_data, sigmau2, eblup, tr
   return(mse_out)
 }
 
+
 boot_sugasawa <- function(sigmau2, vardir, combined_data, framework,
-                        eblup, B, method, transformation = transformation,
-                        interval, alpha) {
-
-
-  M <- framework$M
-  m <- framework$m
-  vardir <- framework$vardir
-  eff_smpsize <- framework$eff_smpsize
-  x <- framework$model_X
-
-  mse <- rep(NA, m)
-
-  ### Bootstrap
-  g1_star <- matrix(NA, m, B)
-  g2_star <- matrix(NA, m, B)
-  in_sample <- framework$obs_dom == TRUE
-  out_sample <- framework$obs_dom == FALSE
-
-  for (b in 1:B){
-
-    #set.seed(b)
-    # Generate bootstrap samples on transformed scale
-
-    v_boot <- rnorm(m, 0, sqrt(sigmau2))
-    e_boot <- rnorm(m, 0, sqrt(vardir))
-
-
-    # Bootstrap sample on transformed scale
-    h_star <- x %*% eblup$coefficients$coefficients + v_boot + e_boot
-
-    # Truncation
-    h_star[h_star < 0] <- 0
-    h_star[h_star > (pi / 2)] <- (pi / 2)
-
-    y_star <- (sin(h_star))^2
-
-    combined_data_boot <- combined_data
-    combined_data_boot[in_sample, paste(framework$formula[2])] <- y_star
-
-
-    framework_boot <- framework_FH(combined_data = combined_data_boot,
-                                   fixed = framework$formula,
-                                   vardir = framework$vardir_orig, domains = framework$domains,
-                                   transformation = transformation,
-                                   eff_smpsize = framework$eff_smpsize)
-
-    # Estimate sigma u -----------------------------------------------------------
-    sigmau2_boot <- wrapper_estsigmau2(framework = framework_boot, method = method,
-                                  interval = interval)
-    # sigmau2 star is estimated
-
-    # Standard EBLUP -------------------------------------------------------------
-    eblup_boot <- eblup_FH(framework = framework_boot, sigmau2 = sigmau2_boot,
-                      combined_data = combined_data_boot)
-    # beta star is estimated
-
-
-    # Estimation of g1 on transformed scale for bootstrap estimates
-    g1_boot <- rep(0, framework$m)
-    # Inverse of total variance
-    Vi_boot <- 1/(sigmau2_boot + framework$vardir)
-    # Shrinkage factor
-    Bd_boot <- framework$vardir/(sigmau2_boot + framework$vardir)
-    # Squared inverse of total variance
-    #SumAD2_boot <- sum(Vi_boot^2)
-    # X'Vi
-    #XtVi_boot <- t(Vi_boot * framework$model_X)
-    # (X'ViX)^-1
-    #Q_boot <- solve(XtVi_boot %*% framework$model_X)
-
-    # 2 divided by squared inverse of total variance
-    #VarA_boot <- 2/SumAD2_boot
-
-    for (d in 1:framework$m) {
-      # Variance due to random effects: vardir * gamma
-      g1_boot[d] <- framework$vardir[d] * (1 - Bd_boot[d])
-      # Covariate for single domain
-      #xd_boot <- matrix(framework$model_X[d, ], nrow = 1, ncol = framework$p)
-      # Variance due to the estimation of beta
-    }
-
-    # Truncation
-    #mu_star_temp <- x %*% eblup$coefficient$coefficients + v_boot
-
-    #mu_star_temp[mu_star_temp < 0] <- 0
-    #mu_star_temp[mu_star_temp > (pi / 2)] <- (pi / 2)
-
-    #mu_star <- (sin(mu_star_temp))^2
-
-    mu_star_int <- NULL
-    for (i in 1:framework$m) {
-      mu_dri_int <- x %*% eblup$coefficient$coefficients
-      # Get value of first domain
-      mu_dri_int <- mu_dri_int[i]
-
-
-      Var_dri_int <- sigmau2
-      #Var_dri_boot <- as.numeric(Var_dri_boot[i])
-
-      integrand_int <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri_int,
-                                                          sd = sqrt(Var_dri_int))}
-      mu_star_int <- c(mu_star_int, integrate(integrand_int,
-                                          lower = 0,
-                                          upper = pi/2)$value)
-    }
-
-
-    # Get the back_transformed estimate
-    int_value <- NULL
-    for (i in 1:framework$m) {
-      mu_dri <- eblup$EBLUP_data$EBLUP[in_sample]
-      # Get value of first domain
-      mu_dri <- mu_dri[i]
-
-
-      Var_dri <- sigmau2 * (1 - eblup$gamma)
-      Var_dri <- as.numeric(Var_dri[i])
-
-      integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
-                                                          sd = sqrt(Var_dri))}
-      int_value <- c(int_value, integrate(integrand,
-                                          lower = 0,
-                                          upper = pi/2)$value)
-    }
-
-
-    g2_boot <- (mu_star_int - int_value)^2
-
-    g1_star[, b] <- g1_boot
-    g2_star[, b] <- g2_boot
-  }
-
-  g1 <- rep(0, framework$m)
-  # Inverse of total variance
-  Vi <- 1/(sigmau2 + framework$vardir)
-  # Shrinkage factor
-  Bd <- framework$vardir/(sigmau2 + framework$vardir)
-
-  for (d in 1:framework$m) {
-    # Variance due to random effects: vardir * gamma
-    g1[d] <- framework$vardir[d] * (1 - Bd[d])
-  }
-
-  g1_bc <- 2 * g1 - as.numeric(rowMeans(g1_star))
-  g2_star_exp <- as.numeric(rowMeans(g2_star))
-
-  mse <- g1_bc + g2_star_exp
-
-  MSE_data <- data.frame(Domain = combined_data[[framework$domains]])
-  MSE_data$Direct <- NA
-  MSE_data$Direct[framework$obs_dom == TRUE] <- framework$vardir
-
-  # Small area MSE
-  MSE_data$FH[framework$obs_dom == TRUE] <- mse
-  MSE_data$ind[framework$obs_dom == TRUE] <- 0
-  MSE_data$FH[framework$obs_dom == FALSE] <- NA
-  MSE_data$ind[framework$obs_dom == FALSE] <- 1
-
-  MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc
-  MSE_data$G1[framework$obs_dom == FALSE] <- NA
-
-  MSE_data$G2[framework$obs_dom == TRUE] <- g2_star_exp
-  MSE_data$G2[framework$obs_dom == FALSE] <- NA
-
-  return(MSE_data)
-}
-
-
-boot_sugasawa2 <- function(sigmau2, vardir, combined_data, framework,
                           eblup, B, MC, method, transformation = transformation,
                           interval, alpha) {
 
@@ -1028,11 +1007,11 @@ boot_sugasawa2 <- function(sigmau2, vardir, combined_data, framework,
   MSE_data$FH[framework$obs_dom == FALSE] <- NA
   MSE_data$ind[framework$obs_dom == FALSE] <- 1
 
-  MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc
-  MSE_data$G1[framework$obs_dom == FALSE] <- NA
+  #MSE_data$G1[framework$obs_dom == TRUE] <- g1_bc
+  #MSE_data$G1[framework$obs_dom == FALSE] <- NA
 
-  MSE_data$G2[framework$obs_dom == TRUE] <- g2_boot
-  MSE_data$G2[framework$obs_dom == FALSE] <- NA
+  #MSE_data$G2[framework$obs_dom == TRUE] <- g2_boot
+  #MSE_data$G2[framework$obs_dom == FALSE] <- NA
 
   return(MSE_data)
 }
@@ -1049,7 +1028,7 @@ wrapper_MSE <- function(framework, combined_data, sigmau2, vardir, eblup,
                     sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
                     transformation = transformation, method = method,
                     interval = interval)
-  } else if (MSE == "jackknife_w"){
+  } else if (MSE == "weighted_jackknife"){
     chen_weighted_jackknife(framework = framework, combined_data = combined_data,
                             sigmau2 = sigmau2, eblup = eblup, vardir = vardir,
                             transformation = transformation, method = method,

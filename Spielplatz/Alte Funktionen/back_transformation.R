@@ -1,7 +1,11 @@
 backtransformed <- function(framework, sigmau2, eblup, transformation,
+                            backtransformation,
                             combined_data, method, vardir,
                             interval, B, alpha, MSE) {
 
+
+  # Define return data frames with direct estimators
+  # These are independent from the backtransformation
   EBLUP_data <- data.frame(Domain = combined_data[[framework$domains]])
   EBLUP_data$Direct <- NA
   EBLUP_data$Direct[framework$obs_dom == TRUE] <- framework$direct_orig
@@ -10,87 +14,102 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
   MSE_data$Direct <- NA
   MSE_data$Direct[framework$obs_dom == TRUE] <- framework$vardir_orig
 
-  if (transformation == "log_crude") {
+  if (transformation == "log") {
+    if (backtransformation == "naive") {
+      estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                                  combined_data = combined_data,
+                                  method = method)
 
-    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                               combined_data = combined_data,
-                               method = method)
+      # The point estimator is simply backtransformed by the exponential without
+      # any adjustment.
+      EBLUP_data$FH <- exp(eblup$EBLUP_data$FH)
+      MSE_data$FH <- exp(eblup$EBLUP_data$FH)^2 * estim_MSE$MSE_data$FH
+      MSE_method <- estim_MSE$MSE_method
 
-    EBLUP_data$FH <- exp(eblup$EBLUP_data$FH + 0.5 * estim_MSE$MSE_data$FH)
-    MSE_data$FH <- exp(eblup$EBLUP_data$FH)^2 * estim_MSE$MSE_data$FH
-    MSE_method <- estim_MSE$MSE_method
+    } else if (backtransformation == "crude") {
+      estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                                  combined_data = combined_data,
+                                  method = method)
 
-  }
-  else if (transformation == "log_naive") {
+      # Crude means that we do not add 0.5 * sigmau2 * (1 - gamma) but the MSE as approximation
+      # of the term. This enables to get estimates also for out-of-sample estimates.
+      EBLUP_data$FH <- exp(eblup$EBLUP_data$FH + 0.5 * estim_MSE$MSE_data$FH)
 
-    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                                combined_data = combined_data,
-                                method = method)
+      # The MSE is backtransformed following ?? Rao??
+      MSE_data$FH <- exp(eblup$EBLUP_data$FH)^2 * estim_MSE$MSE_data$FH
+      MSE_method <- estim_MSE$MSE_method
+    } else if (backtransformation == "sm") {
+      estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
+                                  combined_data = combined_data,
+                                  method = method)
 
-    EBLUP_data$FH <- exp(eblup$EBLUP_data$FH)
-    MSE_data$FH <- exp(eblup$EBLUP_data$FH)^2 * estim_MSE$MSE_data$FH
-    MSE_method <- estim_MSE$MSE_method
+      # Slud and Maiti show the correct backtransformation for the log case which
+      # is adding 0.5 * sigmau2 * (1-gamma) to the point estimator on the transformed
+      # scale and backtransform the term by the exponential
+      EBLUP_data$FH[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$FH[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))
+      # If we want estimates for the out-of-sample domain, we need to use the crude
+      # estimation
+      #EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
+      EBLUP_data$FH[framework$obs_dom == FALSE] <- NA
 
-  }
-  else if (transformation == "log_SM") {
+      SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
+                           eblup = eblup, combined_data = combined_data)
 
-    estim_MSE <- analytical_mse(framework = framework, sigmau2 = sigmau2,
-                             combined_data = combined_data,
-                              method = method)
+      MSE_data$FH[framework$obs_dom == TRUE] <- SM_MSE$FH[framework$obs_dom == TRUE]
+      # MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
+      MSE_data$FHE[framework$obs_dom == FALSE] <- NA
+      MSE_method <- "Slud_Maiti"
 
-    int_value <- NULL
-    for (i in 1:framework$m) {
-
-      mu_dri <- eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]
-      # Get value of first domain
-      #mu_dri <- as.numeric(mu_dri[i, 1])
-      mu_dri <- mu_dri[i]
-
-
-      Var_dri <- sigmau2 * (1 - eblup$gamma)
-      Var_dri <- as.numeric(Var_dri[i])
-
-      integrand <- function(x, mean, sd){exp(x) * dnorm(x, mean = mu_dri,
-                                                        sd = sqrt(Var_dri))}
-
-      upper_bound <- min(mean(framework$direct) + 10 * sd(framework$direct),
-                         mu_dri + 100 * sqrt(Var_dri))
-      lower_bound <- max(mean(framework$direct) - 10 * sd(framework$direct),
-                         mu_dri - 100 * sqrt(Var_dri))
-
-
-      int_value <- c(int_value, integrate(integrand,
-                                          lower = lower_bound,
-                                          upper = upper_bound)$value)
     }
-
-    EBLUP_data$FH[framework$obs_dom == TRUE] <- exp(eblup$EBLUP_data$FH[framework$obs_dom == TRUE] + (0.5 * sigmau2 * (1 - eblup$gamma)))
-    #EBLUP_data$EBLUP[framework$obs_dom == FALSE] <- exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE] + 0.5 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE])
-    EBLUP_data$FH[framework$obs_dom == FALSE] <- NA
-
-    SM_MSE <- slud_maiti(framework = framework, sigmau2 = sigmau2,
-                         eblup = eblup, combined_data = combined_data)
-
-    MSE_data$FH[framework$obs_dom == TRUE] <- SM_MSE$FH[framework$obs_dom == TRUE]
-    # MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
-    MSE_data$FHE[framework$obs_dom == FALSE] <- NA
-    MSE_method <- "Slud_Maiti"
-    }
-  else if (transformation == "arcsin" & MSE == "boot") {
-
-
+  } else if (transformation == "arcsin") {
+    if (backtransformation == "naive") {
       EBLUP_data$FH <- eblup$EBLUP_data$FH
 
       EBLUP_data$FH[EBLUP_data$FH < 0] <- 0
       EBLUP_data$FH[EBLUP_data$FH > (pi / 2)] <- (pi / 2)
 
+      EBLUP_data$FH <- (sin(EBLUP_data$FH))^2
+
+      if (MSE == "boot") {
+        conf_int <- boot_arcsin(sigmau2 = sigmau2, combined_data = combined_data,
+                                framework = framework, eblup = eblup,
+                                method = method, interval = interval,
+                                B = B, alpha = alpha)
+        MSE_data$FH <- NA
+        MSE_data$FH_LCI <- conf_int$Li
+        MSE_data$FH_UCI <- conf_int$Ui
+        MSE_method <- "Chatterjee et al bootstrap"
+
+      } else if (MSE == "jackknife" | MSE == "weighted_jackknife") {
+
+        if (MSE == "jackknife") {
+          jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
+                                  sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                                  transformation = transformation, method = method,
+                                  interval = interval, MSE = MSE)
+        } else if (MSE == "weighted_jackknife") {
+          jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
+                                  sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                                  transformation = transformation, method = method,
+                                  interval = interval, MSE = MSE)
+        }
+
+
+        # Following which paper??
+        back_jack_mse <- 2 * sin(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * cos(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * jack_mse$MSE_data$FH[jack_mse$MSE_data$ind == 0]
+
+        MSE_data$FH[framework$obs_dom == TRUE] <- back_jack_mse
+        MSE_data$FH[framework$obs_dom == FALSE] <- NA
+        MSE_method <- jack_mse$MSE_method
+      }
+    } else if (backtransformation == "sm") {
+
+      # Use integral to solve the formula in Slud and Maiti
       int_value <- NULL
       for (i in 1:framework$m) {
 
         mu_dri <- eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]
-        # Get value of first domain
         mu_dri <- mu_dri[i]
-
 
         Var_dri <- sigmau2 * (1 - eblup$gamma)
         Var_dri <- as.numeric(Var_dri[i])
@@ -108,118 +127,48 @@ backtransformed <- function(framework, sigmau2, eblup, transformation,
                                             upper = pi/2)$value)
       }
 
-      EBLUP_data$FH_corr[eblup$EBLUP_data$ind == 0] <- int_value
+      EBLUP_data$FH[eblup$EBLUP_data$ind == 0] <- int_value
+      EBLUP_data$FH[eblup$EBLUP_data$ind == 1] <- (sin(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 1]))^2
 
 
-      EBLUP_data$FH <- (sin(EBLUP_data$FH))^2
-      conf_int <- boot_arcsin(sigmau2 = sigmau2, combined_data = combined_data,
-                              framework = framework, eblup = eblup,
-                              method = method, interval = interval,
-                              B = B, alpha = alpha)
-      MSE_boot <- boot_sugasawa2(sigmau2 = sigmau2, combined_data = combined_data,
-                                framework = framework, transformation = transformation,
-                                eblup = eblup, B = B, MC = 1000, method = method,
-                                interval = interval, alpha = alpha)
-      MSE_data$FH <- MSE_boot$FH
-      #MSE_data$G1 <- MSE_boot$G1
-      #MSE_data$G2 <- MSE_boot$G2
-      MSE_data$FH_LCI <- conf_int$Li
-      MSE_data$FH_UCI <- conf_int$Ui
-      MSE_method <- "boot"
-    }
-  else if (transformation == "arcsin" & MSE == "jackknife") {
+      if (MSE == "boot") {
+        tmp_out <- boot_arcsin_2(sigmau2 = sigmau2, combined_data = combined_data,
+                                 framework = framework, eblup = eblup,
+                                 eblup_corr = EBLUP_data$FH,
+                                 method = method, interval = interval,
+                                 B = B, alpha = alpha)
+        conf_int <- tmp_out[[1]]
+        MSE_boot <- tmp_out[[2]]
 
-      EBLUP_data$FH <- eblup$EBLUP_data$FH
-      EBLUP_data$FH[EBLUP_data$FH < 0] <- 0
-      EBLUP_data$FH[EBLUP_data$FH > (pi / 2)] <- (pi / 2)
+        MSE_data$MSE <- MSE_boot$MSE
+        MSE_data$FH_LCI <- conf_int$Li
+        MSE_data$FH_UCI <- conf_int$Ui
+        MSE_method <- "Gonzalez-Manteiga bootstrap"
 
-      int_value <- NULL
-      for (i in 1:framework$m) {
+      } else if (MSE == "jackknife" | MSE == "weighted_jackknife") {
 
-        mu_dri <- eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]
-        # Get value of first domain
-        mu_dri <- mu_dri[i]
+        if (MSE == "jackknife") {
+          jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
+                                  sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                                  transformation = transformation, method = method,
+                                  interval = interval, MSE = MSE)
+        } else if (MSE == "weighted_jackknife") {
+          jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
+                                  sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                                  transformation = transformation, method = method,
+                                  interval = interval, MSE = MSE)
+        }
 
 
-        Var_dri <- sigmau2 * (1 - eblup$gamma)
-        Var_dri <- as.numeric(Var_dri[i])
+        # Following which paper??
+        back_jack_mse <- 2 * sin(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * cos(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * jack_mse$MSE_data$FH[jack_mse$MSE_data$ind == 0]
 
-        integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
-                                                          sd = sqrt(Var_dri))}
-
-        upper_bound <- min(mean(framework$direct) + 10 * sd(framework$direct),
-                           mu_dri + 100 * sqrt(Var_dri))
-        lower_bound <- max(mean(framework$direct) - 10 * sd(framework$direct),
-                           mu_dri - 100 * sqrt(Var_dri))
-
-        int_value <- c(int_value, integrate(integrand,
-                                            lower = 0,
-                                            upper = pi/2)$value)
+        MSE_data$FH[framework$obs_dom == TRUE] <- back_jack_mse
+        MSE_data$FH[framework$obs_dom == FALSE] <- NA
+        MSE_method <- jack_mse$MSE_method
       }
 
-      EBLUP_data$FH_corr[eblup$EBLUP_data$ind == 0] <- int_value
-      EBLUP_data$FH <- (sin(EBLUP_data$FH))^2
-
-
-      jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
-                              sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
-                              transformation = transformation, method = method,
-                              interval = interval, MSE = MSE)
-
-
-      back_jack_mse <- 2 * sin(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * cos(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * jack_mse$MSE_data$FH[jack_mse$MSE_data$ind == 0]
-
-      MSE_data$FH[framework$obs_dom == TRUE] <- back_jack_mse
-      #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
-      MSE_data$FH[framework$obs_dom == FALSE] <- NA
-      MSE_method <- jack_mse$MSE_method
-  }
-  else if (transformation == "arcsin" & MSE == "jackknife_w") {
-
-    EBLUP_data$FH <- eblup$EBLUP_data$FH
-    EBLUP_data$FH[EBLUP_data$FH < 0] <- 0
-    EBLUP_data$FH[EBLUP_data$FH > (pi / 2)] <- (pi / 2)
-
-    int_value <- NULL
-    for (i in 1:framework$m) {
-
-      mu_dri <- eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]
-      # Get value of first domain
-      mu_dri <- mu_dri[i]
-
-
-      Var_dri <- sigmau2 * (1 - eblup$gamma)
-      Var_dri <- as.numeric(Var_dri[i])
-
-      integrand <- function(x, mean, sd){sin(x)^2 * dnorm(x, mean = mu_dri,
-                                                          sd = sqrt(Var_dri))}
-
-      upper_bound <- min(mean(framework$direct) + 10 * sd(framework$direct),
-                         mu_dri + 100 * sqrt(Var_dri))
-      lower_bound <- max(mean(framework$direct) - 10 * sd(framework$direct),
-                         mu_dri - 100 * sqrt(Var_dri))
-
-      int_value <- c(int_value, integrate(integrand,
-                                          lower = 0,
-                                          upper = pi/2)$value)
     }
-
-    EBLUP_data$FH_corr[eblup$EBLUP_data$ind == 0] <- int_value
-    EBLUP_data$FH <- (sin(EBLUP_data$FH))^2
-
-
-    jack_mse <- wrapper_MSE(framework = framework, combined_data = combined_data,
-                            sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
-                            transformation = transformation, method = method,
-                            interval = interval, MSE = MSE)
-
-
-    back_jack_mse <- 2 * sin(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * cos(eblup$EBLUP_data$FH[eblup$EBLUP_data$ind == 0]) * jack_mse$MSE_data$FH[jack_mse$MSE_data$ind == 0]
-
-    MSE_data$FH[framework$obs_dom == TRUE] <- back_jack_mse
-    #MSE_data$MSE[framework$obs_dom == FALSE] <-  exp(eblup$EBLUP_data$EBLUP[framework$obs_dom == FALSE])^2 * estim_MSE$MSE_data$MSE[framework$obs_dom == FALSE]
-    MSE_data$FH[framework$obs_dom == FALSE] <- NA
-    MSE_method <- jack_mse$MSE_method
   }
 
   EBLUP_data$ind[framework$obs_dom == TRUE] <- 0

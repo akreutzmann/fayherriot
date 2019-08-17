@@ -40,6 +40,7 @@
 #' (iii) log transformation with crude back-transformation ("\code{log_crude}"),
 #' (iv) log transformation with Slud-Maiti back-transformation ("\code{log_SM}")
 #' and (v) arcsin transformation with naive back-transformation ("\code{arcsin}")
+#' @param backtransformation a character that determines the type of bracktransformation
 #' @param eff_smpsize Effective sample size.
 #' @param MSE a character string determining the estimation method of the MSE.
 #' Methods that can be chosen
@@ -59,7 +60,8 @@
 
 
 fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
-               interval = c(0, 1000), transformation = "no", eff_smpsize = NULL,
+               interval = c(0, 1000), transformation = "no",
+               backtransformation = NULL, eff_smpsize = NULL,
                MSE = "analytical", B = NULL, alpha = 0.05) {
 
 
@@ -129,6 +131,7 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
     result_data <- backtransformed(framework = framework,
                                    sigmau2 = sigmau2, eblup = eblup,
                                    transformation = transformation,
+                                   backtransformation = backtransformation,
                                    combined_data = combined_data,
                                    method = method, interval = interval,
                                    MSE = MSE,
@@ -146,7 +149,8 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                              model_select = criteria),
                 framework = framework[c("direct", "vardir", "N_dom_smp",
                                         "N_dom_unobs")],
-                transformation = transformation,
+                transformation = list(transformation = transformation,
+                                      backtransformation = backtransformation),
                 method = list(method = method,
                               MSE_method = result_data$MSE_method),
                fixed = fixed,

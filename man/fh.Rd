@@ -5,8 +5,9 @@
 \title{Standard Fay-Herriot model for disaggregated indicators}
 \usage{
 fh(fixed, vardir, combined_data, domains = NULL, method = "reml",
-  interval = c(0, 1000), transformation = "no", eff_smpsize = NULL,
-  MSE = "analytical", B = NULL, alpha = 0.05)
+  interval = c(0, 1000), transformation = "no",
+  backtransformation = NULL, eff_smpsize = NULL, MSE = "analytical",
+  B = NULL, alpha = 0.05)
 }
 \arguments{
 \item{fixed}{a two-sided linear formula object describing the
@@ -47,6 +48,8 @@ exponential ("\code{log_naive}"),
 (iii) log transformation with crude back-transformation ("\code{log_crude}"),
 (iv) log transformation with Slud-Maiti back-transformation ("\code{log_SM}")
 and (v) arcsin transformation with naive back-transformation ("\code{arcsin}")}
+
+\item{backtransformation}{a character that determines the type of bracktransformation}
 
 \item{eff_smpsize}{Effective sample size.}
 
