@@ -236,7 +236,10 @@ plot.emdi <- function(x,
     }
   }
 
-  if (x$transformation == "box.cox") {
+  if (inherits(x, "ebp")) {
+    if (x$transformation == "box.cox") {
+
+
 
     if (is.null(range)) {
       range <- seq(x$transform_param$optimal_lambda - .2,
@@ -284,6 +287,7 @@ plot.emdi <- function(x,
                         colour = color[1]) + ggtitle(label$box_cox["title"]) +
                           gg_theme))
   }
+}
   invisible(plotList)
 }
 

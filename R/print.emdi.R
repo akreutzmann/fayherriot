@@ -73,26 +73,15 @@ print.emdi <- function(x, ...) {
           "\n")
       cat("MSE method: ", x$method$MSE_method, "\n")
       cat("\n")
-      if (x$transformation == "no") {
+      if (x$transformation$transformation == "no") {
         transform_data <- NULL
-      } else if (x$transformation == "log_crude") {
-        transformation <- "log"
-        backtransformation <- "crude"
-        transform_data <- data.frame(Transformation  = transformation,
-                                     Back_transformation = backtransformation,
-                                     row.names       = ""
-        )
-      } else if (x$transformation == "log_SM") {
-        transformation <- "log"
-        backtransformation <- "Slud_Maiti"
-        transform_data <- data.frame(Transformation  = transformation,
-                                     Back_transformation = backtransformation,
-                                     row.names       = ""
-        )
-      } else if (x$transformation == "arcsin") {
-        transformation <- "arcsin"
-        backtransformation <- "naive"
-        transform_data <- data.frame(Transformation  = transformation,
+      } else {
+        if (x$transformation$backtransformation == "sm") {
+          backtransformation <- "slud-maiti"
+        } else {
+          backtransformation <- x$transformation$backtransformation
+        }
+        transform_data <- data.frame(Transformation  = x$transformation$transformation,
                                      Back_transformation = backtransformation,
                                      row.names       = ""
         )

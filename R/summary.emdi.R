@@ -256,26 +256,15 @@ summary.emdi <- function(object, ...) {
                             row.names = c("Standardized_Residuals",
                                           "Random_effects"))
 
-    if (object$transformation == "no") {
+    if (object$transformation$transformation == "no") {
       transform_data <- NULL
-    } else if (object$transformation == "log_crude") {
-      transformation <- "log"
-      backtransformation <- "crude"
-      transform_data <- data.frame(Transformation  = transformation,
-                                   Back_transformation = backtransformation,
-                                   row.names       = ""
-      )
-    } else if (object$transformation == "log_SM") {
-      transformation <- "log"
-      backtransformation <- "Slud_Maiti"
-      transform_data <- data.frame(Transformation  = transformation,
-                                   Back_transformation = backtransformation,
-                                   row.names       = ""
-      )
-    } else if (object$transformation == "arcsin") {
-      transformation <- "arcsin"
-      backtransformation <- "naive"
-      transform_data <- data.frame(Transformation  = transformation,
+    } else {
+      if (object$transformation$backtransformation == "sm") {
+        backtransformation <- "slud-maiti"
+      } else {
+        backtransformation <- object$transformation$backtransformation
+      }
+      transform_data <- data.frame(Transformation  = object$transformation$transformation,
                                    Back_transformation = backtransformation,
                                    row.names       = ""
       )
@@ -294,6 +283,7 @@ summary.emdi <- function(object, ...) {
                      icc          = NULL,
                      coeff_determ = NULL,
                      model        = object$model,
+                     method       = object$method,
                      #variance_estimation_method = object$method$method,
                      #MSE_method = object$method$MSE_method,
                      #coefficients = object$model$coefficients,

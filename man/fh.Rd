@@ -6,8 +6,8 @@
 \usage{
 fh(fixed, vardir, combined_data, domains = NULL, method = "reml",
   interval = c(0, 1000), transformation = "no",
-  backtransformation = NULL, eff_smpsize = NULL, MSE = "analytical",
-  B = NULL, alpha = 0.05)
+  backtransformation = NULL, eff_smpsize = NULL, MSE = FALSE,
+  mse_type = "analytical", B = NULL, alpha = 0.05)
 }
 \arguments{
 \item{fixed}{a two-sided linear formula object describing the
@@ -53,13 +53,17 @@ and (v) arcsin transformation with naive back-transformation ("\code{arcsin}")}
 
 \item{eff_smpsize}{Effective sample size.}
 
-\item{MSE}{a character string determining the estimation method of the MSE.
+\item{MSE}{if \code{TRUE}, MSE estimates are calculated. Defaults
+to \code{FALSE}.}
+
+\item{mse_type}{a character string determining the estimation method of the MSE.
 Methods that can be chosen
 (i) analytical MSE depending on the estimation method of the variance of the
 random effect ("\code{analytical}"),
 (ii) a jackknife MSE ("\code{jackknife}"),
-(iii) and a bootstrap that returns the backtransformed confidence intervals
-when the arcsin transformation is chosen ("\code{boot}").}
+(ii) a weighted jackknife MSE ("\code{weighted_jackknife}"),
+(iii) and a bootstrap ("\code{boot}"). The latter three options are of interest
+when the arcsin transformation is selected.}
 
 \item{B}{numeric value that determines the number of bootstrap iterations.}
 

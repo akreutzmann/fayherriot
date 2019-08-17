@@ -42,13 +42,16 @@
 #' and (v) arcsin transformation with naive back-transformation ("\code{arcsin}")
 #' @param backtransformation a character that determines the type of bracktransformation
 #' @param eff_smpsize Effective sample size.
-#' @param MSE a character string determining the estimation method of the MSE.
+#' @param MSE if \code{TRUE}, MSE estimates are calculated. Defaults
+#' to \code{FALSE}.
+#' @param mse_type a character string determining the estimation method of the MSE.
 #' Methods that can be chosen
 #' (i) analytical MSE depending on the estimation method of the variance of the
 #' random effect ("\code{analytical}"),
 #' (ii) a jackknife MSE ("\code{jackknife}"),
-#' (iii) and a bootstrap that returns the backtransformed confidence intervals
-#' when the arcsin transformation is chosen ("\code{boot}").
+#' (ii) a weighted jackknife MSE ("\code{weighted_jackknife}"),
+#' (iii) and a bootstrap ("\code{boot}"). The latter three options are of interest
+#' when the arcsin transformation is selected.
 #' @param B numeric value that determines the number of bootstrap iterations.
 #' @param alpha a numeric value that determines the confidence level for the
 #' confidence intervals.
@@ -62,7 +65,7 @@
 fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                interval = c(0, 1000), transformation = "no",
                backtransformation = NULL, eff_smpsize = NULL,
-               MSE = "analytical", B = NULL, alpha = 0.05) {
+               MSE = FALSE, mse_type = "analytical", B = NULL, alpha = 0.05) {
 
 
   # Save function call ---------------------------------------------------------
@@ -93,17 +96,25 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
   if (transformation == "no") {
 
     # Analytical MSE
-    MSE_data <- wrapper_MSE(framework = framework, combined_data = combined_data,
-                            sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
-                            transformation = transformation, method = method,
-                            interval = interval, MSE = MSE)
+    if (MSE == TRUE) {
+      MSE_data <- wrapper_MSE(framework = framework, combined_data = combined_data,
+                              sigmau2 = sigmau2, vardir = vardir, eblup = eblup,
+                              transformation = transformation, method = method,
+                              interval = interval, mse_type = mse_type)
+      MSE <- MSE_data$MSE_data
+      MSE_method <- MSE_data$MSE_method
+    } else {
+      MSE <- NULL
+      MSE_method <- "no mse estimated"
+    }
+
 
     # Shrinkage factor
     Gamma <- data.frame(Domain = framework$data[[framework$domains]],
                         Gamma = eblup$gamma)
 
     out <- list(ind = eblup$EBLUP_data,
-                MSE = MSE_data$MSE_data,
+                MSE = MSE,
                 transform_param = NULL,
                 model = list(coefficients = eblup$coefficients,
                              sigmau2 = sigmau2,
@@ -114,9 +125,10 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                              model_select = criteria),
                 framework = framework[c("direct", "vardir", "N_dom_smp",
                                         "N_dom_unobs")],
-                transformation = transformation,
+                transformation = list(transformation = transformation,
+                                      backtransformation = backtransformation),
                 method = list(method = method,
-                              MSE_method = MSE_data$MSE_method),
+                              MSE_method = MSE_method),
                 fixed = fixed,
                 call = call,
                 successful_bootstraps = NULL
@@ -135,6 +147,7 @@ fh <- function(fixed, vardir, combined_data, domains = NULL, method = "reml",
                                    combined_data = combined_data,
                                    method = method, interval = interval,
                                    MSE = MSE,
+                                   mse_type = mse_type,
                                    B = B, alpha = alpha)
 
     out <- list(ind = result_data$EBLUP_data,

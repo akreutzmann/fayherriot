@@ -50,7 +50,8 @@ compare_plot <- function(object, indicator, ...) UseMethod("compare_plot")
 #' estimators for each selected indicator obtained by \code{\link[ggplot2]{ggplot}}.
 #' @keywords internal
 
-compare_plot_ebp <- function(direct, model, indicator = "all", label = "orig",
+compare_plot_ebp <- function(direct, model, indicator = "all", MSE = FALSE,
+                             CV = FALSE, label = "orig",
                              color = c("blue", "lightblue3"),
                              shape = c(16, 16), line_type = c("solid", "solid"),
                              gg_theme = NULL) {
@@ -81,10 +82,31 @@ compare_plot_ebp <- function(direct, model, indicator = "all", label = "orig",
 
   matcher <- match(Data$Domain, names(smp_size))
   Data$smp_size <- as.numeric(smp_size)[matcher]
+
+  if (MSE == TRUE || CV == TRUE ) {
+    precisions_direct <- mse_emdi(object = direct, indicator = indicator, CV = TRUE)
+    colnames(precisions_direct$ind) <- paste0(colnames(precisions_direct$ind), "Direct_MSE")
+    colnames(precisions_direct$ind_cv) <- paste0(colnames(precisions_direct$ind_cv), "Direct_CV")
+
+    precisions_model <- mse_emdi(object = model, indicator = indicator, CV = TRUE)
+    colnames(precisions_model$ind) <- paste0(colnames(precisions_model$ind), "Direct_MSE")
+    colnames(precisions_model$ind_cv) <- paste0(colnames(precisions_model$ind_cv), "Direct_CV")
+
+    if (MSE == TRUE) {
+      Data <- merge(Data, precisions_direct$ind, id = "Domain")
+      Data <- merge(Data, precisions_model$ind, id = "Domain")
+    }
+    if (CV == TRUE) {
+      Data <- merge(Data, precisions_direct$ind_cv, id = "Domain")
+      Data <- merge(Data, precisions_model$ind_cv, id = "Domain")
+    }
+
+  }
+
   selected_indicators <- selected_model[selected_model %in% selected_direct]
 
   compare_plots(object = Data, type = "unit", selected_indicators = selected_indicators,
-                MSE = FALSE, CV = FALSE, label = label, color = color,
+                MSE = MSE, CV = MSE, label = label, color = color,
                 shape = shape, line_type = line_type, gg_theme = gg_theme)
 
 }
@@ -132,7 +154,11 @@ compare_plot_fh <- function(direct, model, indicator = "all", MSE = FALSE, CV = 
 
   Data <- direct$ind[direct$ind$ind == 0,]
   names(Data) <- c("Domain", "FH_Direct", "FH_Model", "ind")
-  Data$smp_size <- -direct$MSE$Direct[direct$MSE$ind == 0]
+  if (is.null(direct$MSE)) {
+    Data$smp_size <- NULL
+  } else {
+    Data$smp_size <- -direct$MSE$Direct[direct$MSE$ind == 0]
+  }
   selected_indicators <- "FH"
 
   if (MSE == TRUE || CV == TRUE) {
@@ -213,16 +239,16 @@ define_evallabel <- function(type, label, indi){
                                y_lab = "Value",
                                x_lab = "Domain (ordered by sample size)"),
                       boxplot_MSE = c(title = indi,
-                               y_lab = "Value",
+                               y_lab = "MSE",
                                x_lab = "Domain (ordered by sample size)"),
                       ordered_MSE = c(title = indi,
-                               y_lab = "Value",
+                               y_lab = "MSE",
                                x_lab = "Domain (ordered by sample size)"),
                       boxplot_CV = c(title = indi,
-                                  y_lab = "Value",
+                                  y_lab = "CV",
                                   x_lab = "Domain (ordered by sample size)"),
                       ordered_CV = c(title = indi,
-                                  y_lab = "Value",
+                                  y_lab = "CV",
                                   x_lab = "Domain (ordered by sample size)"))
       } else if (type == "area") {
         label <- list(scatter = c(title = indi,
@@ -241,7 +267,7 @@ define_evallabel <- function(type, label, indi){
                                      y_lab = "CV",
                                      x_lab = ""),
                       ordered_CV = c(title = indi,
-                                     y_lab = "Value",
+                                     y_lab = "CV",
                                      x_lab = "Domain (ordered by increasing CV of Direct)"))
       }
 
@@ -274,16 +300,16 @@ define_evallabel <- function(type, label, indi){
                                y_lab = "Value",
                                x_lab = "Domain (ordered by sample size)"),
                       boxplot_MSE = c(title = "",
-                                      y_lab = "Value",
+                                      y_lab = "MSE",
                                       x_lab = "Domain (ordered by sample size)"),
                       ordered_MSE = c(title = "",
-                                      y_lab = "Value",
+                                      y_lab = "MSE",
                                       x_lab = "Domain (ordered by sample size)"),
                       boxplot_CV = c(title = "",
-                                     y_lab = "Value",
+                                     y_lab = "CV",
                                      x_lab = "Domain (ordered by sample size)"),
                       ordered_CV = c(title = "",
-                                     y_lab = "Value",
+                                     y_lab = "CV",
                                      x_lab = "Domain (ordered by sample size)"))
       } else if (type == "area") {
         label <- list(scatter = c(title = "",
@@ -302,7 +328,7 @@ define_evallabel <- function(type, label, indi){
                                      y_lab = "CV",
                                      x_lab = ""),
                       ordered_CV = c(title = "",
-                                     y_lab = "Value",
+                                     y_lab = "CV",
                                      x_lab = "Domain (ordered by increasing CV of Direct)"))
       }
 
@@ -410,9 +436,18 @@ compare_plots <- function(object, type, selected_indicators, MSE, CV, label, col
 
     label_ind <- define_evallabel(type = type, label = label, indi = ind)
 
-    data_tmp <- data.frame(Direct = object[, paste0(ind, "_Direct")],
-                           Model_based = object[, paste0(ind, "_Model")],
-                           smp_size = object$smp_size)
+    if (is.null(object$smp_size)) {
+      data_tmp <- data.frame(Direct = object[, paste0(ind, "_Direct")],
+                             Model_based = object[, paste0(ind, "_Model")])
+      label_ind$line["x_lab"] <- "Domains (unordered)"
+    } else {
+      data_tmp <- data.frame(Direct = object[, paste0(ind, "_Direct")],
+                             Model_based = object[, paste0(ind, "_Model")],
+                             smp_size = object$smp_size)
+      data_tmp <- data_tmp[order(data_tmp$smp_size), ]
+      data_tmp$smp_size <- NULL
+    }
+
 
     print((plotList[[paste("scatter", ind, sep = "_")]] <- ggplot(data_tmp,
                                                                   aes(x = Direct, y = Model_based)) + geom_point() +
@@ -427,8 +462,7 @@ compare_plots <- function(object, type, selected_indicators, MSE, CV, label, col
     cat("Press [enter] to continue")
     line <- readline()
 
-    data_tmp <- data_tmp[order(data_tmp$smp_size), ]
-    data_tmp$smp_size <- NULL
+
     data_tmp$ID <- seq_along(object$Domain)
     data_shaped <- melt(data_tmp, id.vars = "ID")
     names(data_shaped) <- c("ID", "Method", "value")

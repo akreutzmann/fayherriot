@@ -10,7 +10,6 @@ mse_emdi <- function(object, indicator = "all", CV = FALSE) {
          define custom indicators and generate a new emdi object. See also help(ebp).')
   }
 
-
   # Calculation of CVs
   if(inherits(object, "fh")) {
     object$MSE <- object$MSE[, c("Domain", "Direct", "FH")]
