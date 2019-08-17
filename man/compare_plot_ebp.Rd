@@ -36,3 +36,4 @@ For all indicators or a selection of indicators two plots are returned. The
 first plot is a scatter plot of estimates to compare and the second is a line
 plot with these estimates.
 }
+\keyword{internal}

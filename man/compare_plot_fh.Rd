@@ -4,9 +4,10 @@
 \alias{compare_plot_fh}
 \title{Shows plots for the comparison of estimates}
 \usage{
-compare_plot_fh(direct, model, indicator = "all", label = "orig",
-  color = c("blue", "lightblue3"), shape = c(16, 16),
-  line_type = c("solid", "solid"), gg_theme = NULL)
+compare_plot_fh(direct, model, indicator = "all", MSE = FALSE,
+  CV = FALSE, label = "orig", color = c("blue", "lightblue3"),
+  shape = c(16, 16), line_type = c("solid", "solid"),
+  gg_theme = NULL)
 }
 \arguments{
 \item{direct}{optional, an object of type "emdi","direct", representing point
@@ -36,3 +37,4 @@ For all indicators or a selection of indicators two plots are returned. The
 first plot is a scatter plot of estimates to compare and the second is a line
 plot with these estimates.
 }
+\keyword{internal}
